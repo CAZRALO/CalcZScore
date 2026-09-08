@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phân Tích Sức Khỏe Tài Chính & Điểm Số Altman Z-Score / Z'-Score</title>
+  <meta name="description" content="Công cụ tính toán và trực quan hóa chỉ số cảnh báo nguy cơ phá sản Altman Z-Score, Z'-Score và Z''-Score cho doanh nghiệp qua 4-5 năm với biểu đồ cột kết hợp đường.">
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            },
+            safe: {
+              50: '#ecfdf5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            },
+            grey: {
+              50: '#fffbeb',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309',
+            },
+            distress: {
+              50: '#fef2f2',
+              500: '#ef4444',
+              600: '#dc2626',
+              700: '#b91c1c',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar for matrix table */
+    .table-scrollbar::-webkit-scrollbar {
+      height: 8px;
+    }
+    .table-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+    .table-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .table-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen font-sans flex flex-col">
+
+  <!-- TOP HEADER -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+          <i data-lucide="trending-up" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">Altman Z-Score Analytics</h1>
+            <span class="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-0.5 rounded-full font-semibold">Pro v2.0</span>
+          </div>
+          <p class="text-xs text-slate-500 font-medium">Hệ thống dự báo nguy cơ kiệt quệ tài chính đa năm (2021-2025)</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <button id="btn-demo-safe" onclick="loadPreset('safe')" class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5" title="Doanh nghiệp sản xuất tăng trưởng an toàn">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+          <span>Mẫu: An toàn</span>
+        </button>
+        <button id="btn-demo-warning" onclick="loadPreset('warning')" class="text-xs bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5" title="Doanh nghiệp vùng xám có rủi ro">
+          <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i>
+          <span>Mẫu: Vùng xám</span>
+        </button>
+        <button id="btn-demo-distress" onclick="loadPreset('distress')" class="text-xs bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5" title="Doanh nghiệp nguy cơ phá sản cao">
+          <i data-lucide="alert-octagon" class="w-3.5 h-3.5 text-rose-600"></i>
+          <span>Mẫu: Nguy hiểm</span>
+        </button>
+        <button onclick="resetData()" class="text-xs bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 font-medium px-2.5 py-1.5 rounded-lg transition" title="Xóa toàn bộ dữ liệu">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-grow space-y-6">
+
+    <!-- CONTROL PANEL & MODEL SELECTOR -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        <!-- Model selection -->
+        <div class="lg:col-span-8">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+            <i data-lucide="layers" class="w-4 h-4 text-indigo-600"></i>
+            Chọn Mô Hình Phân Tích Altman
+          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <!-- Model Z -->
+            <label class="relative flex flex-col p-3 rounded-xl border-2 cursor-pointer transition select-none model-radio-card" id="card-model-Z">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-slate-900 text-sm">Mô hình Z (1968)</span>
+                <input type="radio" name="modelType" value="Z" checked onchange="switchModel('Z')" class="text-indigo-600 focus:ring-indigo-500">
+              </div>
+              <span class="text-xs text-slate-500">Sản xuất niêm yết (5 biến số)</span>
+              <div class="mt-2 text-[11px] font-medium text-indigo-600">An toàn: &ge; 2.99 | Nguy cơ: &lt; 1.81</div>
+            </label>
+
+            <!-- Model Z' -->
+            <label class="relative flex flex-col p-3 rounded-xl border-2 cursor-pointer transition select-none model-radio-card" id="card-model-Zprime">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-slate-900 text-sm">Mô hình Z' (1983)</span>
+                <input type="radio" name="modelType" value="Zprime" onchange="switchModel('Zprime')" class="text-indigo-600 focus:ring-indigo-500">
+              </div>
+              <span class="text-xs text-slate-500">Doanh nghiệp tư nhân (5 biến)</span>
+              <div class="mt-2 text-[11px] font-medium text-indigo-600">An toàn: &ge; 2.90 | Nguy cơ: &lt; 1.23</div>
+            </label>
+
+            <!-- Model Z'' -->
+            <label class="relative flex flex-col p-3 rounded-xl border-2 cursor-pointer transition select-none model-radio-card" id="card-model-Zprime2">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-slate-900 text-sm">Mô hình Z'' (1995)</span>
+                <input type="radio" name="modelType" value="Zprime2" onchange="switchModel('Zprime2')" class="text-indigo-600 focus:ring-indigo-500">
+              </div>
+              <span class="text-xs text-slate-500">Phi sản xuất / Dịch vụ (4 biến)</span>
+              <div class="mt-2 text-[11px] font-medium text-indigo-600">An toàn: &ge; 2.60 | Nguy cơ: &lt; 1.10</div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Year Configuration & Quick Info -->
+        <div class="lg:col-span-4 bg-slate-50 rounded-xl p-4 border border-slate-200">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Cấu Hình Dải Năm</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700" id="years-count-badge">5 năm gần nhất</span>
+          </div>
+          <div class="flex items-center gap-2 mb-3">
+            <div class="flex-1">
+              <label class="text-[11px] text-slate-500 block mb-0.5">Số lượng năm</label>
+              <select id="select-year-count" onchange="changeYearRange(this.value)" class="w-full text-xs font-semibold bg-white border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                <option value="4">4 Năm (2022 - 2025)</option>
+                <option value="5" selected>5 Năm (2021 - 2025)</option>
+                <option value="6">6 Năm (2020 - 2025)</option>
+              </select>
+            </div>
+            <div class="flex-1">
+              <label class="text-[11px] text-slate-500 block mb-0.5">Đơn vị nhập liệu</label>
+              <select id="select-unit" onchange="changeUnit(this.value)" class="w-full text-xs font-semibold bg-white border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                <option value="billion" selected>Tỷ đồng (VND)</option>
+                <option value="million">Triệu đồng (VND)</option>
+                <option value="raw">Số nguyên bản</option>
+              </select>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-500 leading-relaxed">
+            * <span class="font-medium text-slate-700">Mẹo:</span> Hệ thống tự động tính toán và vẽ lại biểu đồ ngay khi bạn nhập hoặc chỉnh sửa số liệu.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS & SUMMARY SECTION -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- MAIN COMBO CHART (Bar + Line) -->
+      <div class="lg:col-span-8 bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="bar-chart-2" class="w-5 h-5 text-indigo-600"></i>
+                Biểu Đồ Cột - Đường Diễn Biến Điểm Z-Score
+              </h2>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">Cột biểu thị điểm số từng năm; Đường nét liền thể hiện xu thế sức khỏe tài chính</p>
+          </div>
+          <div class="flex items-center gap-2 text-xs font-medium">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-emerald-500 inline-block"></span> An toàn</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-amber-500 inline-block"></span> Vùng xám</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-rose-500 inline-block"></span> Nguy hiểm</span>
+          </div>
+        </div>
+
+        <!-- Canvas for Chart.js -->
+        <div class="relative w-full h-72 sm:h-80">
+          <canvas id="zscoreComboChart"></canvas>
+        </div>
+
+        <!-- Legend / Threshold indicator bar -->
+        <div class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-2">
+          <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1.5">
+              <span class="w-3.5 h-0.5 bg-emerald-600 border-t-2 border-dashed border-emerald-600 inline-block"></span> 
+              Ngưỡng an toàn: <b id="threshold-safe-label" class="text-emerald-700">&ge; 2.99</b>
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="w-3.5 h-0.5 bg-rose-600 border-t-2 border-dashed border-rose-600 inline-block"></span> 
+              Ngưỡng nguy cơ: <b id="threshold-distress-label" class="text-rose-700">&lt; 1.81</b>
+            </span>
+          </div>
+          <div id="chart-latest-status" class="font-bold text-xs"></div>
+        </div>
+      </div>
+
+      <!-- LATEST YEAR HIGHLIGHT & AI DIAGNOSTIC -->
+      <div class="lg:col-span-4 space-y-6 flex flex-col">
+        
+        <!-- Score Card for Latest Year -->
+        <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-2xl p-5 shadow-sm relative overflow-hidden flex-1 flex flex-col justify-between">
+          <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs uppercase font-bold tracking-wider text-indigo-300">Điểm số năm mới nhất (<span id="highlight-year-label">2025</span>)</span>
+              <span id="badge-latest-zone" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                VÙNG AN TOÀN
+              </span>
+            </div>
+
+            <div class="flex items-baseline gap-3 my-2">
+              <div class="text-4xl sm:text-5xl font-extrabold tracking-tight" id="highlight-score-value">3.45</div>
+              <div class="text-xs font-medium" id="highlight-delta-box">
+                <span id="highlight-delta-val" class="text-emerald-400 font-semibold">+0.25</span>
+                <span class="text-slate-400 block text-[10px]">so với năm trước</span>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed mt-2" id="highlight-summary-desc">
+              Doanh nghiệp có cơ cấu tài chính vững mạnh, khả năng thanh toán cao và nguy cơ kiệt quệ tài chính trong 2 năm tới là rất thấp.
+            </p>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-white/10 grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span class="text-slate-400 block text-[11px]">Xu hướng 4-5 năm:</span>
+              <span id="highlight-trend" class="font-semibold text-emerald-400">Tăng trưởng tích cực</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[11px]">Điểm TB các năm:</span>
+              <span id="highlight-avg-score" class="font-semibold text-white">3.12</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Automated Diagnostic Box -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex-1 flex flex-col justify-between">
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2.5 flex items-center gap-1.5">
+              <i data-lucide="cpu" class="w-4 h-4 text-indigo-600"></i>
+              Đánh Giá & Chẩn Đoán Sức Khỏe
+            </h3>
+            <div id="ai-diagnostic-content" class="text-xs text-slate-600 space-y-2 leading-relaxed">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Tiêu chuẩn Altman Z-Score</span>
+            <span class="font-medium text-slate-600">Dữ liệu cập nhật tự động</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- MULTI-YEAR FINANCIAL DATA MATRIX INPUT -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="p-5 sm:px-6 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4 bg-slate-50/70">
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="table-properties" class="w-5 h-5 text-indigo-600"></i>
+            Bảng Nhập Số Liệu Báo Cáo Tài Chính Đa Năm
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">Nhập các chỉ tiêu tài chính từng năm. Kết quả $X_1 - X_5$ và Z-Score sẽ tự động cập nhật.</p>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <button onclick="calculateAll()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition shadow-sm shadow-indigo-200 flex items-center gap-1.5">
+            <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+            <span>Tính Lại Kết Quả</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SPREADSHEET MATRIX TABLE -->
+      <div class="overflow-x-auto table-scrollbar p-4">
+        <table class="w-full text-left border-collapse min-w-[700px]" id="matrix-table">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-700 text-xs uppercase font-bold tracking-wider bg-slate-100/70">
+              <th class="py-3 px-4 w-72 rounded-l-lg">Chỉ Tiêu BCTC</th>
+              <th class="py-3 px-2 w-20 text-center text-slate-500">Ký Hiệu</th>
+              <!-- Dynamic Year Headers Injected Here -->
+              <th id="th-years-container" class="contents"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-xs" id="matrix-tbody">
+            <!-- Table rows generated by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DETAILED CALCULATION RESULTS TABLE -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="p-5 sm:px-6 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="file-spreadsheet" class="w-5 h-5 text-indigo-600"></i>
+            Bảng Chi Tiết Điểm Số & Các Chỉ Số Thành Phần ($X_1 - X_5$)
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">Bóc tách trọng số và mức độ đóng góp của từng chỉ số thành phần vào điểm Z-Score chung</p>
+        </div>
+
+        <!-- Chart View Toggle Button -->
+        <div class="flex items-center gap-2">
+          <button id="btn-toggle-components" onclick="toggleComponentChart()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+            <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-indigo-600"></i>
+            <span id="btn-toggle-components-text">Xem Biểu Đồ Bóc Tách $X_1 - X_5$</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- OPTIONAL: COMPONENT BREAKDOWN CHART -->
+      <div id="components-chart-wrapper" class="hidden p-5 border-b border-slate-200 bg-slate-50/50">
+        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">So sánh các cấu phần $X_1, X_2, X_3, X_4, X_5$ qua các năm</h3>
+        <div class="relative w-full h-64">
+          <canvas id="componentsBarChart"></canvas>
+        </div>
+      </div>
+
+      <!-- RESULTS MATRIX TABLE -->
+      <div class="overflow-x-auto table-scrollbar p-4">
+        <table class="w-full text-left border-collapse min-w-[700px]">
+          <thead>
+            <tr class="border-b border-slate-200 text-slate-700 text-xs uppercase font-bold tracking-wider bg-slate-50">
+              <th class="py-3 px-4 w-72">Chỉ Số Đánh Giá</th>
+              <th class="py-3 px-2 w-28 text-center">Ý Nghĩa Kinh Tế</th>
+              <!-- Dynamic Year Headers -->
+              <th id="th-results-years-container" class="contents"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-xs" id="results-tbody">
+            <!-- Injected via JS -->
+          </tbody>
+          <tfoot class="border-t-2 border-slate-300 font-bold bg-slate-50/80 text-xs" id="results-tfoot">
+            <!-- Final Z-Score rows injected via JS -->
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- FINANCIAL FORMULAS & DOCUMENTATION REFERENCE -->
+    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+      <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+        <i data-lucide="book-open" class="w-4 h-4 text-indigo-600"></i>
+        Phương Pháp Luận & Diễn Giải Công Thức Altman
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-600">
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+          <h4 class="font-bold text-slate-800 text-sm mb-1.5 text-indigo-600">1. Mô hình Z (1968 - Sản xuất)</h4>
+          <p class="font-mono text-[11px] bg-white p-2 rounded border border-slate-200 mb-2 font-semibold text-slate-800">
+            Z = 1.2 X₁ + 1.4 X₂ + 3.3 X₃ + 0.6 X₄ + 0.999 X₅
+          </p>
+          <ul class="space-y-1 list-disc list-inside text-slate-600">
+            <li><b>X₁</b>: Vốn lưu động ròng / Tổng tài sản (Khả năng thanh toán)</li>
+            <li><b>X₂</b>: Lợi nhuận giữ lại / Tổng tài sản (Tích lũy tài chính)</li>
+            <li><b>X₃</b>: EBIT / Tổng tài sản (Hiệu quả sinh lời tài sản)</li>
+            <li><b>X₄</b>: Vốn hóa thị trường / Tổng nợ phải trả (Đòn bẩy tài chính)</li>
+            <li><b>X₅</b>: Doanh thu thuần / Tổng tài sản (Vòng quay tài sản)</li>
+          </ul>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+          <h4 class="font-bold text-slate-800 text-sm mb-1.5 text-indigo-600">2. Mô hình Z' (1983 - Công ty tư nhân)</h4>
+          <p class="font-mono text-[11px] bg-white p-2 rounded border border-slate-200 mb-2 font-semibold text-slate-800">
+            Z' = 0.717 X₁ + 0.847 X₂ + 3.107 X₃ + 0.420 X₄ + 0.998 X₅
+          </p>
+          <p class="leading-relaxed">
+            Áp dụng cho doanh nghiệp sản xuất chưa niêm yết trên thị trường chứng khoán. Biến số <b>X₄</b> được thay thế bằng <i>Giá trị sổ sách vốn chủ sở hữu / Tổng nợ</i>.
+          </p>
+          <div class="mt-2 text-[11px] font-semibold text-amber-700 bg-amber-50 p-1.5 rounded">
+            Ngưỡng: Safe &ge; 2.90 | Grey: 1.23 - 2.90 | Distress &lt; 1.23
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+          <h4 class="font-bold text-slate-800 text-sm mb-1.5 text-indigo-600">3. Mô hình Z'' (1995 - Phi sản xuất)</h4>
+          <p class="font-mono text-[11px] bg-white p-2 rounded border border-slate-200 mb-2 font-semibold text-slate-800">
+            Z'' = 6.56 X₁ + 3.26 X₂ + 6.72 X₃ + 1.05 X₄
+          </p>
+          <p class="leading-relaxed">
+            Dành cho doanh nghiệp thương mại, dịch vụ, phi sản xuất hoặc thị trường mới nổi (Emerging Markets). Bỏ qua biến số X₅ để loại bỏ ảnh hưởng đặc thù của vòng quay tài sản.
+          </p>
+          <div class="mt-2 text-[11px] font-semibold text-emerald-700 bg-emerald-50 p-1.5 rounded">
+            Ngưỡng: Safe &ge; 2.60 | Grey: 1.10 - 2.60 | Distress &lt; 1.10
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 py-5 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <b>Altman Z-Score Financial Analyzer</b> • Xây dựng cho phân tích Báo Cáo Tài Chính Doanh Nghiệp 2021-2025
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="https://github.com/CAZRALO/CalcZScore" target="_blank" class="text-indigo-600 hover:underline flex items-center gap-1 font-medium">
+          <i data-lucide="github" class="w-3.5 h-3.5"></i> GitHub Repo
+        </a>
+        <span>•</span>
+        <span>Hỗ trợ deploy Vercel</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SCRIPT APPLICATION LOGIC -->
+  <script>
+    // ==========================================
+    // STATE & CONFIGURATION
+    // ==========================================
+    let currentModel = 'Z'; // 'Z', 'Zprime', 'Zprime2'
+    let years = [2021, 2022, 2023, 2024, 2025];
+    let unitMultiplier = 1; // 1: billion, 0.001, etc.
+    let zscoreChartInstance = null;
+    let componentsChartInstance = null;
+
+    // Fields required for Altman calculation
+    const METRIC_DEFINITIONS = [
+      { id: 'tsnh', name: 'Tài sản ngắn hạn', code: 'TSNH', desc: 'Tiền, khoản phải thu, hàng tồn kho...', requiredFor: ['Z', 'Zprime', 'Zprime2'] },
+      { id: 'nnh',  name: 'Nợ ngắn hạn', code: 'NNH', desc: 'Phải trả người bán, vay ngắn hạn...', requiredFor: ['Z', 'Zprime', 'Zprime2'] },
+      { id: 'tts',  name: 'Tổng tài sản', code: 'TTS', desc: 'Tổng tài sản trên bảng CĐKT', requiredFor: ['Z', 'Zprime', 'Zprime2'] },
+      { id: 'lncpp',name: 'Lợi nhuận chưa phân phối', code: 'LNCPP', desc: 'Lợi nhuận sau thuế chưa phân phối (VCSH)', requiredFor: ['Z', 'Zprime', 'Zprime2'] },
+      { id: 'lntt', name: 'Lợi nhuận trước thuế', code: 'LNTT', desc: 'Lợi nhuận kế toán trước thuế (KQKD)', requiredFor: ['Z', 'Zprime', 'Zprime2'] },
+      { id: 'cplv', name: 'Chi phí lãi vay', code: 'CPLV', desc: 'Chi phí tài chính / lãi vay trong năm', requiredFor: ['Z', 'Zprime', 'Zprime2'] },
+      { id: 'vhtt', name: 'Vốn hóa TT / Vốn CSH', code: 'VHTT / VCSH', desc: 'Vốn hóa TT (Model Z) hoặc Vốn CSH sổ sách (Z\', Z\'\')', requiredFor: ['Z', 'Zprime', 'Zprime2'] },
+      { id: 'tnpt', name: 'Tổng nợ phải trả', code: 'TNPT', desc: 'Nợ ngắn hạn + Nợ dài hạn', requiredFor: ['Z', 'Zprime', 'Zprime2'] },
+      { id: 'dtt',  name: 'Doanh thu thuần', code: 'DTT', desc: 'Doanh thu bán hàng và cung cấp dịch vụ ròng', requiredFor: ['Z', 'Zprime'] } // Not needed for Z''
+    ];
+
+    // PRESET DEMO DATA (In Billions VND)
+    // 1. Safe / Healthy Growth (e.g. Robust Manufacturing Leader)
+    const PRESET_SAFE = {
+      model: 'Z',
+      years: [2021, 2022, 2023, 2024, 2025],
+      data: {
+        tsnh:  { 2021: 15400, 2022: 17800, 2023: 21500, 2024: 25200, 2025: 29800 },
+        nnh:   { 2021: 6200,  2022: 7100,  2023: 8400,  2024: 9300,  2025: 10500 },
+        tts:   { 2021: 28000, 2022: 32500, 2023: 38000, 2024: 43500, 2025: 50000 },
+        lncpp: { 2021: 7200,  2022: 8900,  2023: 11200, 2024: 13800, 2025: 17000 },
+        lntt:  { 2021: 3800,  2022: 4400,  2023: 5200,  2024: 6100,  2025: 7300 },
+        cplv:  { 2021: 450,   2022: 480,   2023: 510,   2024: 530,   2025: 560 },
+        vhtt:  { 2021: 42000, 2022: 46000, 2023: 54000, 2024: 62000, 2025: 75000 },
+        tnpt:  { 2021: 9500,  2022: 10800, 2023: 12500, 2024: 13900, 2025: 15600 },
+        dtt:   { 2021: 31000, 2022: 36500, 2023: 42800, 2024: 49200, 2025: 58000 }
+      }
+    };
+
+    // 2. Warning / Grey Zone (Fluctuating, Higher Debt)
+    const PRESET_WARNING = {
+      model: 'Z',
+      years: [2021, 2022, 2023, 2024, 2025],
+      data: {
+        tsnh:  { 2021: 12000, 2022: 12500, 2023: 13100, 2024: 13800, 2025: 14200 },
+        nnh:   { 2021: 9500,  2022: 10400, 2023: 11500, 2024: 12200, 2025: 13100 },
+        tts:   { 2021: 24000, 2022: 25500, 2023: 27000, 2024: 28200, 2025: 29500 },
+        lncpp: { 2021: 2200,  2022: 2400,  2023: 2300,  2024: 2500,  2025: 2600 },
+        lntt:  { 2021: 1500,  2022: 1400,  2023: 1250,  2024: 1350,  2025: 1450 },
+        cplv:  { 2021: 980,   2022: 1100,  2023: 1250,  2024: 1300,  2025: 1320 },
+        vhtt:  { 2021: 18000, 2022: 16500, 2023: 15000, 2024: 16200, 2025: 17000 },
+        tnpt:  { 2021: 15000, 2022: 16800, 2023: 18500, 2024: 19200, 2025: 20400 },
+        dtt:   { 2021: 20500, 2022: 21800, 2023: 22400, 2024: 23500, 2025: 24200 }
+      }
+    };
+
+    // 3. Distress Zone (High Risk, Sinking Z-Score)
+    const PRESET_DISTRESS = {
+      model: 'Z',
+      years: [2021, 2022, 2023, 2024, 2025],
+      data: {
+        tsnh:  { 2021: 9800,  2022: 8900,  2023: 7800,  2024: 6500,  2025: 5400 },
+        nnh:   { 2021: 9200,  2022: 9700,  2023: 10400, 2024: 11200, 2025: 12000 },
+        tts:   { 2021: 20000, 2022: 19500, 2023: 18200, 2024: 17000, 2025: 15800 },
+        lncpp: { 2021: 1200,  2022: 500,   2023: -600,  2024: -1900, 2025: -3400 },
+        lntt:  { 2021: 850,   2022: 210,   2023: -450,  2024: -1200, 2025: -1800 },
+        cplv:  { 2021: 1100,  2022: 1280,  2023: 1450,  2024: 1600,  2025: 1750 },
+        vhtt:  { 2021: 9500,  2022: 6800,  2023: 4200,  2024: 3100,  2025: 2400 },
+        tnpt:  { 2021: 14500, 2022: 15400, 2023: 16300, 2024: 17200, 2025: 18100 },
+        dtt:   { 2021: 15200, 2022: 14000, 2023: 12100, 2024: 10500, 2025: 8900 }
+      }
+    };
+
+    // Current working dataset in memory
+    let currentData = JSON.parse(JSON.stringify(PRESET_SAFE.data));
+
+    // Threshold definitions
+    const MODEL_THRESHOLDS = {
+      Z: {
+        safe: 2.99,
+        distress: 1.81,
+        safeDesc: '≥ 2.99',
+        distressDesc: '< 1.81',
+        title: 'Mô hình Z (Sản xuất niêm yết)'
+      },
+      Zprime: {
+        safe: 2.90,
+        distress: 1.23,
+        safeDesc: '≥ 2.90',
+        distressDesc: '< 1.23',
+        title: 'Mô hình Z\' (Doanh nghiệp tư nhân)'
+      },
+      Zprime2: {
+        safe: 2.60,
+        distress: 1.10,
+        safeDesc: '≥ 2.60',
+        distressDesc: '< 1.10',
+        title: 'Mô hình Z\'\' (Phi sản xuất / Dịch vụ)'
+      }
+    };
+
+    // ==========================================
+    // INITIALIZATION & SETUP
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      // Check localStorage
+      loadSavedState();
+      renderMatrixHeaders();
+      renderMatrixBody();
+      updateModelCardStyles();
+      calculateAll();
+      lucide.createIcons();
+    });
+
+    function updateModelCardStyles() {
+      ['Z', 'Zprime', 'Zprime2'].forEach(m => {
+        const card = document.getElementById(`card-model-${m}`);
+        const radio = card.querySelector('input');
+        if (m === currentModel) {
+          card.classList.add('border-indigo-600', 'bg-indigo-50/40', 'shadow-sm');
+          card.classList.remove('border-slate-200');
+          radio.checked = true;
+        } else {
+          card.classList.remove('border-indigo-600', 'bg-indigo-50/40', 'shadow-sm');
+          card.classList.add('border-slate-200');
+          radio.checked = false;
+        }
+      });
+
+      const th = MODEL_THRESHOLDS[currentModel];
+      document.getElementById('threshold-safe-label').innerText = th.safeDesc;
+      document.getElementById('threshold-distress-label').innerText = th.distressDesc;
+    }
+
+    function switchModel(model) {
+      currentModel = model;
+      updateModelCardStyles();
+      // Hide or show DTT row if needed for Z''
+      const dttRow = document.getElementById('row-dtt');
+      if (dttRow) {
+        dttRow.style.opacity = model === 'Zprime2' ? '0.4' : '1';
+        dttRow.title = model === 'Zprime2' ? 'Mô hình Z\'\' không dùng biến số Doanh thu thuần (X₅)' : '';
+      }
+      calculateAll();
+      saveState();
+    }
+
+    function changeYearRange(count) {
+      const n = parseInt(count);
+      const endYear = 2025;
+      years = [];
+      for (let i = n - 1; i >= 0; i--) {
+        years.push(endYear - i);
+      }
+      document.getElementById('years-count-badge').innerText = `${n} năm (${years[0]} - ${years[years.length - 1]})`;
+      renderMatrixHeaders();
+      renderMatrixBody();
+      calculateAll();
+      saveState();
+    }
+
+    function changeUnit(unit) {
+      // User can change the unit label
+      calculateAll();
+    }
+
+    // ==========================================
+    // RENDER MATRIX TABLE
+    // ==========================================
+    function renderMatrixHeaders() {
+      // Matrix Header
+      const matrixThContainer = document.getElementById('th-years-container');
+      matrixThContainer.innerHTML = years.map(y => `
+        <th class="py-3 px-3 text-center w-36 font-bold text-slate-800 bg-slate-100">
+          <div class="flex items-center justify-center gap-1">
+            <span>Năm ${y}</span>
+            ${y === years[years.length - 1] ? '<span class="bg-indigo-600 text-white text-[9px] px-1.5 py-0.2 rounded font-bold">Mới nhất</span>' : ''}
+          </div>
+        </th>
+      `).join('');
+
+      // Results Header
+      const resultsThContainer = document.getElementById('th-results-years-container');
+      resultsThContainer.innerHTML = years.map(y => `
+        <th class="py-3 px-3 text-center w-32 font-bold text-slate-800">
+          Năm ${y}
+        </th>
+      `).join('');
+    }
+
+    function renderMatrixBody() {
+      const tbody = document.getElementById('matrix-tbody');
+      tbody.innerHTML = METRIC_DEFINITIONS.map((metric, idx) => {
+        const isDttDisabled = currentModel === 'Zprime2' && metric.id === 'dtt';
+        return `
+          <tr id="row-${metric.id}" class="hover:bg-slate-50 transition ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'} ${isDttDisabled ? 'opacity-40' : ''}">
+            <td class="py-2.5 px-4 font-semibold text-slate-800">
+              <div class="flex flex-col">
+                <span class="text-xs text-slate-900 font-bold">${metric.name}</span>
+                <span class="text-[10px] text-slate-400 font-normal">${metric.desc}</span>
+              </div>
+            </td>
+            <td class="py-2.5 px-2 text-center font-mono font-bold text-indigo-700 bg-slate-100/50 rounded">
+              ${metric.code}
+            </td>
+            ${years.map(y => {
+              const val = (currentData[metric.id] && currentData[metric.id][y] !== undefined) ? currentData[metric.id][y] : '';
+              return `
+                <td class="py-2 px-2 text-center">
+                  <div class="relative">
+                    <input 
+                      type="number" 
+                      step="any"
+                      id="input-${metric.id}-${y}" 
+                      value="${val}" 
+                      oninput="onInputChange('${metric.id}', ${y}, this.value)"
+                      placeholder="0" 
+                      class="w-full text-right text-xs font-semibold px-2.5 py-2 border rounded-lg bg-white border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition"
+                    >
+                  </div>
+                </td>
+              `;
+            }).join('')}
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function onInputChange(metricId, year, value) {
+      if (!currentData[metricId]) currentData[metricId] = {};
+      currentData[metricId][year] = parseFloat(value) || 0;
+      calculateAll();
+      saveState();
+    }
+
+    // ==========================================
+    // CORE FINANCIAL CALCULATION ENGINE
+    // ==========================================
+    function calculateAll() {
+      const resultsPerYear = {};
+
+      years.forEach(y => {
+        const getM = (id) => (currentData[id] && currentData[id][y] !== undefined) ? parseFloat(currentData[id][y]) || 0 : 0;
+
+        const tsnh  = getM('tsnh');
+        const nnh   = getM('nnh');
+        const tts   = getM('tts');
+        const lncpp = getM('lncpp');
+        const lntt  = getM('lntt');
+        const cplv  = getM('cplv');
+        const vhtt  = getM('vhtt');
+        const tnpt  = getM('tnpt');
+        const dtt   = getM('dtt');
+
+        // Prevent division by zero
+        const safeTTS  = tts === 0 ? 1 : tts;
+        const safeTNPT = tnpt === 0 ? 1 : tnpt;
+
+        // Components:
+        // X1: Net Working Capital / Total Assets
+        const x1 = (tsnh - nnh) / safeTTS;
+        // X2: Retained Earnings / Total Assets
+        const x2 = lncpp / safeTTS;
+        // X3: EBIT / Total Assets (EBIT = LNTT + CPLV)
+        const ebit = lntt + cplv;
+        const x3 = ebit / safeTTS;
+        // X4: Market Value of Equity (or Book Value) / Total Liabilities
+        const x4 = vhtt / safeTNPT;
+        // X5: Net Sales / Total Assets
+        const x5 = dtt / safeTTS;
+
+        // Calculate score according to active model
+        let score = 0;
+        let zone = 'safe'; // 'safe', 'grey', 'distress'
+
+        if (currentModel === 'Z') {
+          // Standard Altman (1968)
+          score = 1.2 * x1 + 1.4 * x2 + 3.3 * x3 + 0.6 * x4 + 0.999 * x5;
+          if (score >= 2.99) zone = 'safe';
+          else if (score < 1.81) zone = 'distress';
+          else zone = 'grey';
+        } else if (currentModel === 'Zprime') {
+          // Altman Z' (1983)
+          score = 0.717 * x1 + 0.847 * x2 + 3.107 * x3 + 0.420 * x4 + 0.998 * x5;
+          if (score >= 2.90) zone = 'safe';
+          else if (score < 1.23) zone = 'distress';
+          else zone = 'grey';
+        } else if (currentModel === 'Zprime2') {
+          // Altman Z'' (1995)
+          score = 6.56 * x1 + 3.26 * x2 + 6.72 * x3 + 1.05 * x4;
+          if (score >= 2.60) zone = 'safe';
+          else if (score < 1.10) zone = 'distress';
+          else zone = 'grey';
+        }
+
+        resultsPerYear[y] = {
+          x1, x2, x3, x4, x5,
+          ebit,
+          score,
+          zone,
+          hasValidData: tts > 0 && tnpt > 0
+        };
+      });
+
+      renderResultsTable(resultsPerYear);
+      updateChart(resultsPerYear);
+      updateHighlightBox(resultsPerYear);
+      updateAIDiagnostic(resultsPerYear);
+      if (componentsChartInstance || (document.getElementById('components-chart-wrapper') && !document.getElementById('components-chart-wrapper').classList.contains('hidden'))) {
+        updateComponentsChart(resultsPerYear);
+      }
+    }
+
+    // ==========================================
+    // RENDER RESULTS TABLE
+    // ==========================================
+    function renderResultsTable(res) {
+      const tbody = document.getElementById('results-tbody');
+      const tfoot = document.getElementById('results-tfoot');
+
+      const COMPONENT_ROWS = [
+        { key: 'x1', label: 'X₁ = Vốn LĐ ròng / TTS', meaning: 'Khả năng thanh toán tức thời' },
+        { key: 'x2', label: 'X₂ = LN giữ lại / TTS', meaning: 'Tự tài trợ & tích lũy vốn' },
+        { key: 'x3', label: 'X₃ = EBIT / TTS', meaning: 'Hiệu quả sinh lời của tài sản' },
+        { key: 'x4', label: 'X₄ = VCSH / Tổng nợ', meaning: 'Mức độ an toàn đòn bẩy' },
+        { key: 'x5', label: 'X₅ = DTT / TTS', meaning: 'Vòng quay & hiệu suất tài sản', hiddenInZprime2: true }
+      ];
+
+      tbody.innerHTML = COMPONENT_ROWS.map(comp => {
+        if (currentModel === 'Zprime2' && comp.hiddenInZprime2) {
+          return `
+            <tr class="bg-slate-50/50 opacity-40">
+              <td class="py-2.5 px-4 font-semibold text-slate-500">${comp.label}</td>
+              <td class="py-2.5 px-2 text-center text-slate-400">${comp.meaning}</td>
+              ${years.map(() => `<td class="py-2 px-3 text-center text-slate-400 font-mono">- (Bỏ qua trong Z'')</td>`).join('')}
+            </tr>
+          `;
+        }
+
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-2.5 px-4 font-semibold text-slate-800">
+              ${comp.label}
+            </td>
+            <td class="py-2.5 px-2 text-center text-slate-500 text-[11px]">
+              ${comp.meaning}
+            </td>
+            ${years.map((y, idx) => {
+              const val = res[y][comp.key];
+              const prevVal = idx > 0 ? res[years[idx - 1]][comp.key] : null;
+              let trendIcon = '';
+              if (prevVal !== null) {
+                const diff = val - prevVal;
+                if (diff > 0.001) trendIcon = '<span class="text-emerald-600 font-bold ml-1">↑</span>';
+                else if (diff < -0.001) trendIcon = '<span class="text-rose-600 font-bold ml-1">↓</span>';
+              }
+              return `
+                <td class="py-2 px-3 text-center font-mono font-medium text-slate-700">
+                  <span>${val.toFixed(4)}</span>
+                  ${trendIcon}
+                </td>
+              `;
+            }).join('')}
+          </tr>
+        `;
+      }).join('');
+
+      // Render Final Z-Score Footer Rows
+      tfoot.innerHTML = `
+        <tr class="bg-indigo-50/60 border-t-2 border-indigo-200">
+          <td class="py-3 px-4 font-bold text-slate-900 text-sm">
+            Điểm Số ${currentModel === 'Z' ? 'Altman Z' : (currentModel === 'Zprime' ? 'Altman Z\'' : 'Altman Z\'\'')}
+          </td>
+          <td class="py-3 px-2 text-center font-bold text-indigo-700">
+            Tổng hợp
+          </td>
+          ${years.map(y => {
+            const score = res[y].score;
+            let color = 'text-emerald-600';
+            if (res[y].zone === 'distress') color = 'text-rose-600';
+            else if (res[y].zone === 'grey') color = 'text-amber-600';
+
+            return `
+              <td class="py-3 px-3 text-center font-mono font-black text-sm sm:text-base ${color}">
+                ${score.toFixed(3)}
+              </td>
+            `;
+          }).join('')}
+        </tr>
+        <tr>
+          <td class="py-2.5 px-4 font-semibold text-slate-600">
+            Xếp loại rủi ro phá sản
+          </td>
+          <td class="py-2.5 px-2 text-center text-slate-400">
+            Trạng thái
+          </td>
+          ${years.map(y => {
+            const zone = res[y].zone;
+            let badge = '';
+            if (zone === 'safe') {
+              badge = '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">An toàn</span>';
+            } else if (zone === 'grey') {
+              badge = '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">Vùng xám</span>';
+            } else {
+              badge = '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300">Nguy hiểm</span>';
+            }
+            return `
+              <td class="py-2.5 px-3 text-center">
+                ${badge}
+              </td>
+            `;
+          }).join('')}
+        </tr>
+      `;
+    }
+
+    // ==========================================
+    // CHART.JS: COMBO BAR & LINE CHART
+    // ==========================================
+    function updateChart(res) {
+      const labels = years.map(y => `Năm ${y}`);
+      const scores = years.map(y => Number(res[y].score.toFixed(3)));
+
+      const th = MODEL_THRESHOLDS[currentModel];
+      const safeThresholdArray = years.map(() => th.safe);
+      const distressThresholdArray = years.map(() => th.distress);
+
+      // Bar Colors dynamic per zone
+      const barColors = years.map(y => {
+        if (res[y].zone === 'safe') return 'rgba(16, 185, 129, 0.85)'; // Emerald
+        if (res[y].zone === 'grey') return 'rgba(245, 158, 11, 0.85)'; // Amber
+        return 'rgba(239, 68, 68, 0.85)'; // Red
+      });
+
+      const barBorders = years.map(y => {
+        if (res[y].zone === 'safe') return '#059669';
+        if (res[y].zone === 'grey') return '#d97706';
+        return '#dc2626';
+      });
+
+      const ctx = document.getElementById('zscoreComboChart').getContext('2d');
+
+      if (zscoreChartInstance) {
+        zscoreChartInstance.destroy();
+      }
+
+      zscoreChartInstance = new Chart(ctx, {
+        data: {
+          labels: labels,
+          datasets: [
+            // 1. Line Trendline
+            {
+              type: 'line',
+              label: 'Đường Xu Hướng Z-Score',
+              data: scores,
+              borderColor: '#4f46e5', // Indigo-600
+              borderWidth: 3,
+              pointBackgroundColor: '#ffffff',
+              pointBorderColor: '#4f46e5',
+              pointBorderWidth: 2.5,
+              pointRadius: 6,
+              pointHoverRadius: 8,
+              tension: 0.3,
+              order: 1
+            },
+            // 2. Bar chart per year
+            {
+              type: 'bar',
+              label: 'Điểm Số Altman Z-Score',
+              data: scores,
+              backgroundColor: barColors,
+              borderColor: barBorders,
+              borderWidth: 1.5,
+              borderRadius: 8,
+              barPercentage: 0.45,
+              order: 2
+            },
+            // 3. Safe Zone Threshold Line
+            {
+              type: 'line',
+              label: `Ngưỡng An Toàn (${th.safe})`,
+              data: safeThresholdArray,
+              borderColor: '#059669',
+              borderWidth: 2,
+              borderDash: [6, 4],
+              pointRadius: 0,
+              fill: false,
+              order: 3
+            },
+            // 4. Distress Zone Threshold Line
+            {
+              type: 'line',
+              label: `Ngưỡng Nguy Cơ (${th.distress})`,
+              data: distressThresholdArray,
+              borderColor: '#dc2626',
+              borderWidth: 2,
+              borderDash: [6, 4],
+              pointRadius: 0,
+              fill: false,
+              order: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: {
+                boxWidth: 14,
+                font: { family: 'Inter', size: 11, weight: '500' },
+                padding: 12
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.95)',
+              titleFont: { family: 'Inter', size: 12, weight: '700' },
+              bodyFont: { family: 'Inter', size: 11 },
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                afterBody: function(context) {
+                  const dataIndex = context[0].dataIndex;
+                  const targetYear = years[dataIndex];
+                  const z = res[targetYear];
+                  let status = 'Vùng an toàn (Sức khỏe tốt)';
+                  if (z.zone === 'grey') status = 'Vùng xám (Cần cảnh báo)';
+                  if (z.zone === 'distress') status = 'Vùng nguy cơ phá sản cao';
+                  return `\nTrạng thái: ${status}\nX₁ (Vốn LĐ): ${z.x1.toFixed(3)}\nX₃ (EBIT/TTS): ${z.x3.toFixed(3)}\nX₄ (VCSH/Nợ): ${z.x4.toFixed(3)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: 'Inter', size: 12, weight: '600' }, color: '#475569' }
+            },
+            y: {
+              grid: { color: 'rgba(226, 232, 240, 0.7)' },
+              ticks: { font: { family: 'Inter', size: 11 }, color: '#64748b' },
+              suggestedMin: 0,
+              suggestedMax: Math.max(...scores, th.safe + 1)
+            }
+          }
+        }
+      });
+    }
+
+    // ==========================================
+    // HIGHLIGHT BOX & STATS SUMMARY
+    // ==========================================
+    function updateHighlightBox(res) {
+      const latestYear = years[years.length - 1];
+      const prevYear = years.length > 1 ? years[years.length - 2] : null;
+      const latest = res[latestYear];
+
+      document.getElementById('highlight-year-label').innerText = latestYear;
+      document.getElementById('highlight-score-value').innerText = latest.score.toFixed(2);
+
+      // Delta
+      if (prevYear) {
+        const delta = latest.score - res[prevYear].score;
+        const deltaEl = document.getElementById('highlight-delta-val');
+        if (delta >= 0) {
+          deltaEl.innerText = `+${delta.toFixed(2)}`;
+          deltaEl.className = 'text-emerald-400 font-semibold';
+        } else {
+          deltaEl.innerText = `${delta.toFixed(2)}`;
+          deltaEl.className = 'text-rose-400 font-semibold';
+        }
+      }
+
+      // Zone Badge
+      const badgeEl = document.getElementById('badge-latest-zone');
+      const chartLatestEl = document.getElementById('chart-latest-status');
+      if (latest.zone === 'safe') {
+        badgeEl.innerText = 'VÙNG AN TOÀN';
+        badgeEl.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        document.getElementById('highlight-summary-desc').innerText = 'Doanh nghiệp có cơ cấu tài chính lành mạnh, đòn bẩy hợp lý và khả năng đáp ứng nghĩa vụ nợ rất tốt.';
+        chartLatestEl.innerHTML = `<span class="text-emerald-600 font-bold">Năm ${latestYear}: An toàn (${latest.score.toFixed(2)})</span>`;
+      } else if (latest.zone === 'grey') {
+        badgeEl.innerText = 'VÙNG XÁM CẢNH BÁO';
+        badgeEl.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40';
+        document.getElementById('highlight-summary-desc').innerText = 'Doanh nghiệp đang đối mặt với một số rủi ro thanh khoản hoặc đòn bẩy nợ cao. Cần theo dõi chặt chẽ dòng tiền.';
+        chartLatestEl.innerHTML = `<span class="text-amber-600 font-bold">Năm ${latestYear}: Vùng xám (${latest.score.toFixed(2)})</span>`;
+      } else {
+        badgeEl.innerText = 'VÙNG NGUY CƠ PHÁ SẢN';
+        badgeEl.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+        document.getElementById('highlight-summary-desc').innerText = 'Cảnh báo đỏ: Doanh nghiệp chịu áp lực nợ nần nghiêm trọng hoặc hoạt động kinh doanh thua lỗ, nguy cơ kiệt quệ tài chính cao.';
+        chartLatestEl.innerHTML = `<span class="text-rose-600 font-bold">Năm ${latestYear}: Nguy hiểm (${latest.score.toFixed(2)})</span>`;
+      }
+
+      // Average & Trend
+      const scores = years.map(y => res[y].score);
+      const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+      document.getElementById('highlight-avg-score').innerText = avg.toFixed(2);
+
+      const trendEl = document.getElementById('highlight-trend');
+      if (scores[scores.length - 1] > scores[0] + 0.3) {
+        trendEl.innerText = 'Đang cải thiện rõ rệt ↑';
+        trendEl.className = 'font-semibold text-emerald-400';
+      } else if (scores[scores.length - 1] < scores[0] - 0.3) {
+        trendEl.innerText = 'Đang suy giảm nghiêm trọng ↓';
+        trendEl.className = 'font-semibold text-rose-400';
+      } else {
+        trendEl.innerText = 'Đi ngang / Ổn định →';
+        trendEl.className = 'font-semibold text-amber-400';
+      }
+    }
+
+    // ==========================================
+    // AI / FINANCIAL DIAGNOSTIC INSIGHTS
+    // ==========================================
+    function updateAIDiagnostic(res) {
+      const latestYear = years[years.length - 1];
+      const latest = res[latestYear];
+      const container = document.getElementById('ai-diagnostic-content');
+
+      const insights = [];
+
+      // 1. Working Capital Check (X1)
+      if (latest.x1 < 0) {
+        insights.push({
+          type: 'danger',
+          icon: 'alert-circle',
+          text: `<b>Vốn lưu động ròng âm (X₁ = ${latest.x1.toFixed(3)})</b>: Nợ ngắn hạn vượt quá tài sản ngắn hạn, tiềm ẩn rủi ro thiếu hụt thanh khoản trong ngắn hạn.`
+        });
+      } else if (latest.x1 > 0.25) {
+        insights.push({
+          type: 'success',
+          icon: 'check-circle-2',
+          text: `<b>Thanh khoản dồi dào (X₁ = ${latest.x1.toFixed(3)})</b>: Doanh nghiệp có tấm đệm vốn lưu động ròng vững chắc để hấp thụ các biến động thị trường.`
+        });
+      }
+
+      // 2. Profitability Check (X3)
+      if (latest.x3 < 0) {
+        insights.push({
+          type: 'danger',
+          icon: 'trending-down',
+          text: `<b>Hiệu quả sinh lời âm (EBIT/TTS = ${latest.x3.toFixed(3)})</b>: Hoạt động kinh doanh cốt lõi không tạo ra đủ lợi nhuận bù đắp chi phí vốn.`
+        });
+      } else if (latest.x3 > 0.12) {
+        insights.push({
+          type: 'success',
+          icon: 'trending-up',
+          text: `<b>Sinh lời tốt (X₃ = ${latest.x3.toFixed(3)})</b>: Tỷ suất sinh lời EBIT trên tài sản cao, là động lực chính duy trì sức khỏe tài chính.`
+        });
+      }
+
+      // 3. Leverage Check (X4)
+      if (latest.x4 < 0.5) {
+        insights.push({
+          type: 'warning',
+          icon: 'shield-alert',
+          text: `<b>Đòn bẩy nợ cao (VCSH/Tổng nợ = ${latest.x4.toFixed(3)})</b>: Tỷ lệ phụ thuộc vào nợ vay quá lớn, làm tăng tính nhạy cảm với rủi ro lãi suất.`
+        });
+      } else if (latest.x4 > 1.5) {
+        insights.push({
+          type: 'success',
+          icon: 'shield-check',
+          text: `<b>Cơ cấu vốn an toàn (X₄ = ${latest.x4.toFixed(3)})</b>: Vốn chủ sở hữu lớn hơn nhiều so với nợ phải trả, biên độ an toàn nợ rất cao.`
+        });
+      }
+
+      // Fallback if neutral
+      if (insights.length === 0) {
+        insights.push({
+          type: 'info',
+          icon: 'info',
+          text: `Các chỉ số tài chính của doanh nghiệp đang ở mức trung bình của ngành, duy trì trạng thái ổn định vừa phải qua các năm.`
+        });
+      }
+
+      container.innerHTML = insights.map(item => {
+        let badgeColor = 'bg-slate-50 border-slate-200 text-slate-700';
+        if (item.type === 'danger') badgeColor = 'bg-rose-50 border-rose-200 text-rose-800';
+        if (item.type === 'warning') badgeColor = 'bg-amber-50 border-amber-200 text-amber-800';
+        if (item.type === 'success') badgeColor = 'bg-emerald-50 border-emerald-200 text-emerald-800';
+
+        return `
+          <div class="p-2.5 rounded-xl border ${badgeColor} flex items-start gap-2">
+            <span class="mt-0.5">•</span>
+            <span>${item.text}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==========================================
+    // COMPONENT BREAKDOWN CHART (OPTIONAL TOGGLE)
+    // ==========================================
+    function toggleComponentChart() {
+      const wrapper = document.getElementById('components-chart-wrapper');
+      const btnText = document.getElementById('btn-toggle-components-text');
+      if (wrapper.classList.contains('hidden')) {
+        wrapper.classList.remove('hidden');
+        btnText.innerText = 'Ẩn Biểu Đồ Bóc Tách $X_1 - X_5$';
+        updateComponentsChart();
+      } else {
+        wrapper.classList.add('hidden');
+        btnText.innerText = 'Xem Biểu Đồ Bóc Tách $X_1 - X_5$';
+      }
+    }
+
+    function updateComponentsChart(res) {
+      if (!res) {
+        // re-run calculation to get fresh results
+        calculateAll();
+        return;
+      }
+      const ctx = document.getElementById('componentsBarChart').getContext('2d');
+      if (componentsChartInstance) {
+        componentsChartInstance.destroy();
+      }
+
+      const labels = years.map(y => `Năm ${y}`);
+      const datasets = [
+        { label: 'X₁ (Vốn LĐ ròng / TTS)', data: years.map(y => res[y].x1.toFixed(3)), backgroundColor: '#3b82f6' },
+        { label: 'X₂ (LN giữ lại / TTS)', data: years.map(y => res[y].x2.toFixed(3)), backgroundColor: '#8b5cf6' },
+        { label: 'X₃ (EBIT / TTS)', data: years.map(y => res[y].x3.toFixed(3)), backgroundColor: '#10b981' },
+        { label: 'X₄ (VCSH / Tổng nợ)', data: years.map(y => res[y].x4.toFixed(3)), backgroundColor: '#f59e0b' },
+      ];
+
+      if (currentModel !== 'Zprime2') {
+        datasets.push({ label: 'X₅ (DTT / TTS)', data: years.map(y => res[y].x5.toFixed(3)), backgroundColor: '#06b6d4' });
+      }
+
+      componentsChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { boxWidth: 12, font: { family: 'Inter', size: 10 } } }
+          },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: 'rgba(226, 232, 240, 0.7)' } }
+          }
+        }
+      });
+    }
+
+    // ==========================================
+    // PRESETS & RESET LOGIC
+    // ==========================================
+    function loadPreset(type) {
+      let preset = PRESET_SAFE;
+      if (type === 'warning') preset = PRESET_WARNING;
+      if (type === 'distress') preset = PRESET_DISTRESS;
+
+      currentModel = preset.model;
+      years = [...preset.years];
+      currentData = JSON.parse(JSON.stringify(preset.data));
+
+      document.getElementById('select-year-count').value = years.length;
+      document.getElementById('years-count-badge').innerText = `${years.length} năm (${years[0]} - ${years[years.length - 1]})`;
+
+      renderMatrixHeaders();
+      renderMatrixBody();
+      updateModelCardStyles();
+      calculateAll();
+      saveState();
+    }
+
+    function resetData() {
+      if (confirm('Bạn có chắc chắn muốn xóa toàn bộ số liệu về 0 không?')) {
+        currentData = {
+          tsnh: {}, nnh: {}, tts: {}, lncpp: {}, lntt: {}, cplv: {}, vhtt: {}, tnpt: {}, dtt: {}
+        };
+        renderMatrixBody();
+        calculateAll();
+        saveState();
+      }
+    }
+
+    // ==========================================
+    // LOCAL STORAGE PERSISTENCE
+    // ==========================================
+    function saveState() {
+      try {
+        const state = {
+          currentModel,
+          years,
+          currentData
+        };
+        localStorage.setItem('altman_zscore_state', JSON.stringify(state));
+      } catch (e) {
+        console.warn('LocalStorage save failed:', e);
+      }
+    }
+
+    function loadSavedState() {
+      try {
+        const raw = localStorage.getItem('altman_zscore_state');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.currentModel) currentModel = parsed.currentModel;
+          if (parsed.years && Array.isArray(parsed.years) && parsed.years.length >= 3) years = parsed.years;
+          if (parsed.currentData) currentData = parsed.currentData;
+          document.getElementById('select-year-count').value = years.length;
+          document.getElementById('years-count-badge').innerText = `${years.length} năm (${years[0]} - ${years[years.length - 1]})`;
+        }
+      } catch (e) {
+        console.warn('LocalStorage load failed, using defaults:', e);
+      }
+    }
+  </script>
+</body>
+</html>
