@@ -311,7 +311,7 @@
             <i data-lucide="table-properties" class="w-5 h-5 text-indigo-600"></i>
             Bảng Nhập Số Liệu Báo Cáo Tài Chính Đa Năm
           </h2>
-          <p class="text-xs text-slate-500 mt-0.5">Nhập các chỉ tiêu tài chính từng năm. Kết quả $X_1 - X_5$ và Z-Score sẽ tự động cập nhật.</p>
+          <p class="text-xs text-slate-500 mt-0.5">Nhập các chỉ tiêu tài chính từng năm. Kết quả X₁ - X₅ và Z-Score sẽ tự động cập nhật.</p>
         </div>
         
         <div class="flex items-center gap-2">
@@ -346,7 +346,7 @@
         <div>
           <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
             <i data-lucide="file-spreadsheet" class="w-5 h-5 text-indigo-600"></i>
-            Bảng Chi Tiết Điểm Số & Các Chỉ Số Thành Phần ($X_1 - X_5$)
+            Bảng Chi Tiết Điểm Số & Các Chỉ Số Thành Phần (X₁ - X₅)
           </h2>
           <p class="text-xs text-slate-500 mt-0.5">Bóc tách trọng số và mức độ đóng góp của từng chỉ số thành phần vào điểm Z-Score chung</p>
         </div>
@@ -355,14 +355,14 @@
         <div class="flex items-center gap-2">
           <button id="btn-toggle-components" onclick="toggleComponentChart()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
             <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-indigo-600"></i>
-            <span id="btn-toggle-components-text">Xem Biểu Đồ Bóc Tách $X_1 - X_5$</span>
+            <span id="btn-toggle-components-text">Xem Biểu Đồ Bóc Tách X₁ - X₅</span>
           </button>
         </div>
       </div>
 
       <!-- OPTIONAL: COMPONENT BREAKDOWN CHART -->
       <div id="components-chart-wrapper" class="hidden p-5 border-b border-slate-200 bg-slate-50/50">
-        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">So sánh các cấu phần $X_1, X_2, X_3, X_4, X_5$ qua các năm</h3>
+        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">So sánh các cấu phần X₁, X₂, X₃, X₄, X₅ qua các năm</h3>
         <div class="relative w-full h-64">
           <canvas id="componentsBarChart"></canvas>
         </div>
@@ -1163,11 +1163,11 @@
       const btnText = document.getElementById('btn-toggle-components-text');
       if (wrapper.classList.contains('hidden')) {
         wrapper.classList.remove('hidden');
-        btnText.innerText = 'Ẩn Biểu Đồ Bóc Tách $X_1 - X_5$';
+        btnText.innerText = 'Ẩn Biểu Đồ Bóc Tách X₁ - X₅';
         updateComponentsChart();
       } else {
         wrapper.classList.add('hidden');
-        btnText.innerText = 'Xem Biểu Đồ Bóc Tách $X_1 - X_5$';
+        btnText.innerText = 'Xem Biểu Đồ Bóc Tách X₁ - X₅';
       }
     }
 
