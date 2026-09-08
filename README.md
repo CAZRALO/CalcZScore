@@ -1,6 +1,6 @@
 # 📊 Altman Z-Score Analytics & Multi-Year Financial Diagnostic
 
-Hệ thống phân tích và dự báo nguy cơ kiệt quệ tài chính / phá sản doanh nghiệp ứng dụng mô hình **Altman Z-Score**, **Z'-Score** và **Z''-Score** qua nhiều năm tài chính liên tiếp (ví dụ 2021 - 2025) kết hợp biểu đồ cột - đường (Combo Bar & Line Chart) trực quan.
+Hệ thống phân tích và dự báo nguy cơ kiệt quệ tài chính / phá sản doanh nghiệp ứng dụng mô hình **Altman Z-Score** và **Z'-Score** qua nhiều năm tài chính liên tiếp với dải năm tùy biến linh hoạt, kết hợp biểu đồ cột - đường (Combo Bar & Line Chart) trực quan.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FCAZRALO%2FCalcZScore)
 
@@ -8,12 +8,12 @@ Hệ thống phân tích và dự báo nguy cơ kiệt quệ tài chính / phá 
 
 ## 🌟 Tính Năng Nổi Bật
 
-1. **Hỗ trợ đầy đủ 3 mô hình học thuật Altman**:
-   - **Mô hình Z (1968)**: Dành cho doanh nghiệp sản xuất niêm yết (5 biến số).
-   - **Mô hình Z' (1983)**: Dành cho doanh nghiệp tư nhân / chưa niêm yết (5 biến số, vốn chủ sở hữu theo giá trị sổ sách).
-   - **Mô hình Z'' (1995)**: Dành cho doanh nghiệp thương mại, dịch vụ, phi sản xuất hoặc thị trường mới nổi (4 biến số, loại bỏ $X_5$).
-2. **Nhập liệu đa năm dạng bảng ma trận (Multi-Year Matrix)**:
-   - Hỗ trợ phân tích **4 đến 5 năm** gần nhất (mặc định 2021 - 2025, có thể cấu hình linh hoạt).
+1. **Hỗ trợ 2 mô hình học thuật chuẩn Altman**:
+   - **Mô hình Z (1968)**: Dành cho doanh nghiệp sản xuất niêm yết (5 biến số, vốn hóa thị trường).
+   - **Mô hình Z' (1983)**: Dành cho doanh nghiệp tính theo giá trị sổ sách vốn chủ sở hữu (5 biến số).
+2. **Tùy biến dải năm phân tích linh hoạt (Custom Year Range)**:
+   - Cho phép người dùng **tự do nhập Năm đầu và Năm cuối** (ví dụ: 2019 - 2024, 2020 - 2025,...) thay vì bị cố định.
+   - Tự động sinh bảng nhập liệu và biểu đồ tương ứng với số năm được chọn.
    - Tự động kiểm tra tính hợp lệ và cập nhật kết quả tức thì theo thời gian thực (Reactive calculation).
    - Lưu trữ dữ liệu cục bộ (`localStorage`) tự động, không bị mất số liệu khi tải lại trang.
 3. **Biểu đồ Cột kết hợp Đường (Combo Bar & Line Chart)**:
@@ -45,7 +45,7 @@ $$Z = 1.2 X_1 + 1.4 X_2 + 3.3 X_3 + 0.6 X_4 + 0.999 X_5$$
 - $1.81 \le Z < 2.99$: **Vùng xám (Grey Zone)** - Cần theo dõi thêm, có yếu tố rủi ro.
 - $Z < 1.81$: **Vùng nguy hiểm (Distress Zone)** - Nguy cơ kiệt quệ tài chính / vỡ nợ cao.
 
-### 2. Mô hình Z' (1983 - Doanh nghiệp tư nhân)
+### 2. Mô hình Z' (1983)
 $$Z' = 0.717 X_1 + 0.847 X_2 + 3.107 X_3 + 0.420 X_4 + 0.998 X_5$$
 *(Trong đó $X_4 = \text{Giá trị sổ sách Vốn chủ sở hữu} / \text{Tổng nợ phải trả}$)*
 
@@ -53,14 +53,6 @@ $$Z' = 0.717 X_1 + 0.847 X_2 + 3.107 X_3 + 0.420 X_4 + 0.998 X_5$$
 - $Z' \ge 2.90$: An toàn
 - $1.23 \le Z' < 2.90$: Vùng xám
 - $Z' < 1.23$: Nguy hiểm
-
-### 3. Mô hình Z'' (1995 - Phi sản xuất / Emerging Markets)
-$$Z'' = 6.56 X_1 + 3.26 X_2 + 6.72 X_3 + 1.05 X_4$$
-
-**Ngưỡng đánh giá**:
-- $Z'' \ge 2.60$: An toàn
-- $1.10 \le Z'' < 2.60$: Vùng xám
-- $Z'' < 1.10$: Nguy hiểm
 
 ---
 
