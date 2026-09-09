@@ -21,10 +21,19 @@ Hệ thống phân tích và dự báo nguy cơ kiệt quệ tài chính / phá 
    - **Dạng đường (Line)**: Đường xu hướng kết nối điểm Z-Score qua các năm giúp nhận biết ngay doanh nghiệp đang cải thiện hay xấu đi.
    - **Vạch ngưỡng chuẩn (Threshold Lines)**: Đường nét đứt màu đỏ và xanh thể hiện ranh giới các vùng an toàn và nguy cơ.
    - **Biểu đồ bóc tách thành phần**: Phân tích chi tiết mức độ đóng góp của $X_1, X_2, X_3, X_4, X_5$.
-4. **Chẩn đoán & Nhận định Tài chính Tự Động**:
+4. **Mô Phỏng Giả Định (What-If Scenario Simulation) & Dự Báo Tương Lai**:
+   - Cho phép người dùng trực tiếp **kéo trượt điều chỉnh các giả định kinh doanh cốt lõi** cho năm tiếp theo: Biến động Doanh thu thuần, Chi phí lãi vay, Lợi nhuận trước thuế (EBT), Tổng nợ phải trả và Vốn hóa thị trường.
+   - **Tích hợp kịch bản Stress-Test 1-Click**:
+     - *Cảnh báo suy thoái*: Doanh thu $-20\%$ và Chi phí lãi vay $+30\%$.
+     - *Khủng hoảng dòng tiền cực đoan*: Doanh thu $-35\%$, Lãi vay $+50\%$, Nợ $+25\%$.
+     - *Kịch bản cơ sở*: Giữ nguyên $0\%$ biến động.
+     - *Tăng trưởng bứt phá*: Doanh thu $+25\%$, Lãi vay $-10\%$, LNTT $+35\%$.
+   - **Chiếu trực tiếp quỹ đạo lên biểu đồ**: Biểu đồ chính tự động nối thêm cột dự phóng kèm đường xu thế nét đứt, cho thấy tức thì điểm số Z-Score sẽ trượt xuống vùng rủi ro nào.
+   - **Bóc tách độ nhạy thành phần ($X_1 - X_5$) & Tư vấn quản trị**: Tự động chỉ ra cấu phần làm xói mòn điểm số mạnh nhất và đề xuất giải pháp cơ cấu nợ, bảo toàn thanh khoản.
+5. **Chẩn đoán & Nhận định Tài chính Tự Động**:
    - Tự động nhận diện rủi ro: Vốn lưu động ròng âm ($X_1 < 0$), gánh nặng đòn bẩy nợ vay quá lớn ($X_4$ thấp), biên EBIT suy thoái ($X_3 < 0$),...
    - Đưa ra nhận xét xu hướng và khuyến nghị quản trị dòng tiền.
-5. **Dữ liệu mẫu (Preset Demo)**:
+6. **Dữ liệu mẫu (Preset Demo)**:
    - Tải nhanh dữ liệu mẫu Doanh nghiệp Tăng trưởng An toàn, Doanh nghiệp Vùng xám và Doanh nghiệp Nguy cơ phá sản cao chỉ bằng 1 cú nhấp chuột.
 
 ---

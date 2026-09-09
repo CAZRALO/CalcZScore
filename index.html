@@ -322,6 +322,326 @@
 
     </div>
 
+    <!-- ========================================== -->
+    <!-- WHAT-IF SCENARIO SIMULATION & TRAJECTORY FORECASTER -->
+    <!-- ========================================== -->
+    <div id="scenario-simulation-card" class="bg-gradient-to-br from-white via-indigo-50/20 to-purple-50/30 rounded-2xl p-5 sm:p-6 border border-indigo-200/90 shadow-sm relative overflow-hidden">
+      <!-- Decorative background glow -->
+      <div class="absolute -right-16 -top-16 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -left-16 -bottom-16 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- HEADER OF SIMULATION -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-indigo-100">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                Mô Phỏng Giả Định & Dự Báo Quỹ Đạo (Scenario Simulator)
+              </h2>
+              <span id="badge-sim-year" class="bg-indigo-600 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-sm">
+                Dự phóng 2026
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Tự do điều chỉnh các biến động năm tới để kiểm tra độ nhạy và quỹ đạo dịch chuyển của điểm số Z-Score
+            </p>
+          </div>
+        </div>
+
+        <!-- SIMULATION CONTROLS & TOGGLE -->
+        <div class="flex items-center gap-3">
+          <label class="relative inline-flex items-center cursor-pointer select-none">
+            <input type="checkbox" id="sim-toggle-checkbox" checked onchange="toggleSimulation(this.checked)" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+            <span class="ml-2.5 text-xs font-bold text-slate-700">Chiếu lên biểu đồ</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- PRESET BUTTONS ROW -->
+      <div class="mt-4 flex flex-wrap items-center justify-between gap-2.5 bg-slate-50/80 p-3 rounded-xl border border-slate-200/80">
+        <div class="flex items-center gap-1.5 text-xs font-bold text-slate-600">
+          <i data-lucide="crosshair" class="w-3.5 h-3.5 text-indigo-600"></i>
+          <span>Kịch bản Stress-Test mẫu:</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="applySimPreset('stress_prompt')" id="btn-preset-stress" class="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold px-3 py-1.5 rounded-lg transition shadow-xs flex items-center gap-1.5 active:scale-95" title="Kịch bản stress-test: Doanh thu giảm 20% và chi phí lãi vay tăng 30%">
+            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i>
+            <span>Doanh thu -20% & Lãi vay +30%</span>
+          </button>
+          <button type="button" onclick="applySimPreset('crisis')" id="btn-preset-crisis" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 font-bold px-3 py-1.5 rounded-lg transition shadow-xs flex items-center gap-1.5 active:scale-95" title="Khủng hoảng dòng tiền cực đoan: DT -35%, Lãi +50%, Nợ +25%">
+            <i data-lucide="flame" class="w-3.5 h-3.5 text-rose-600"></i>
+            <span>Khủng hoảng cực đoan</span>
+          </button>
+          <button type="button" onclick="applySimPreset('base')" id="btn-preset-base" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium px-3 py-1.5 rounded-lg transition shadow-xs flex items-center gap-1.5 active:scale-95" title="Kịch bản cơ sở: Giữ nguyên 0% biến động">
+            <i data-lucide="scale" class="w-3.5 h-3.5 text-slate-600"></i>
+            <span>Cơ sở (0% biến động)</span>
+          </button>
+          <button type="button" onclick="applySimPreset('bull')" id="btn-preset-bull" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-3 py-1.5 rounded-lg transition shadow-xs flex items-center gap-1.5 active:scale-95" title="Tăng trưởng bứt phá: DT +25%, Lãi -10%, LNTT +35%">
+            <i data-lucide="rocket" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span>Tăng trưởng bứt phá</span>
+          </button>
+          <button type="button" onclick="resetSimSliders()" class="text-xs bg-white hover:bg-slate-100 text-slate-500 border border-slate-200 px-2 py-1.5 rounded-lg transition" title="Đặt lại kịch bản mặc định">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- MAIN SIMULATION GRID: SLIDERS & PREDICTION OUTCOME -->
+      <div class="mt-5 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT COLUMN: 5 INTERACTIVE SLIDERS (lg:col-span-7) -->
+        <div class="lg:col-span-7 space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+              <i data-lucide="sliders" class="w-4 h-4 text-indigo-600"></i>
+              Tham Số Giả Định Điều Chỉnh (Căn cứ năm <span id="sim-base-year-label">2025</span>)
+            </span>
+            <span class="text-[11px] text-slate-400 font-medium">Kéo trượt để cập nhật kết quả tức thì</span>
+          </div>
+
+          <!-- SLIDER 1: REVENUE -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs hover:border-indigo-300 transition">
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                <label for="slider-rev" class="text-xs font-bold text-slate-800">Doanh thu thuần (Net Sales)</label>
+                <span class="text-[11px] text-slate-400">(Tác động X₅ & Vốn LĐ)</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <span id="badge-rev-val" class="font-mono text-xs font-extrabold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">-20%</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-[10px] font-semibold text-slate-400 w-8 text-right">-50%</span>
+              <input 
+                type="range" 
+                id="slider-rev" 
+                min="-50" 
+                max="50" 
+                step="1" 
+                value="-20" 
+                oninput="onSimSliderChange('revPct', this.value)"
+                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+              >
+              <span class="text-[10px] font-semibold text-slate-400 w-8">+50%</span>
+            </div>
+            <div class="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
+              <span>Năm trước: <b id="sim-orig-rev" class="text-slate-700">58,000</b></span>
+              <span>Giả định năm tới: <b id="sim-target-rev" class="text-indigo-600 font-bold">46,400</b></span>
+            </div>
+          </div>
+
+          <!-- SLIDER 2: INTEREST EXPENSE -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs hover:border-indigo-300 transition">
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                <label for="slider-int" class="text-xs font-bold text-slate-800">Chi phí lãi vay (Interest Expense)</label>
+                <span class="text-[11px] text-slate-400">(Tác động X₃ EBIT & dòng tiền)</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <span id="badge-int-val" class="font-mono text-xs font-extrabold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">+30%</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-[10px] font-semibold text-slate-400 w-8 text-right">-50%</span>
+              <input 
+                type="range" 
+                id="slider-int" 
+                min="-50" 
+                max="100" 
+                step="1" 
+                value="30" 
+                oninput="onSimSliderChange('intPct', this.value)"
+                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+              >
+              <span class="text-[10px] font-semibold text-slate-400 w-8">+100%</span>
+            </div>
+            <div class="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
+              <span>Năm trước: <b id="sim-orig-int" class="text-slate-700">560</b></span>
+              <span>Giả định năm tới: <b id="sim-target-int" class="text-indigo-600 font-bold">728</b></span>
+            </div>
+          </div>
+
+          <!-- SLIDER 3: PRE-TAX PROFIT (EBT) -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs hover:border-indigo-300 transition">
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <label for="slider-ebt" class="text-xs font-bold text-slate-800">Lợi nhuận trước thuế (LNTT)</label>
+                <span class="text-[11px] text-slate-400">(Tác động X₂ LNCPP & X₃ EBIT)</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <span id="badge-ebt-val" class="font-mono text-xs font-extrabold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">-35%</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-[10px] font-semibold text-slate-400 w-8 text-right">-100%</span>
+              <input 
+                type="range" 
+                id="slider-ebt" 
+                min="-100" 
+                max="100" 
+                step="1" 
+                value="-35" 
+                oninput="onSimSliderChange('ebtPct', this.value)"
+                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+              >
+              <span class="text-[10px] font-semibold text-slate-400 w-8">+100%</span>
+            </div>
+            <div class="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
+              <span>Năm trước: <b id="sim-orig-ebt" class="text-slate-700">7,300</b></span>
+              <span>Giả định năm tới: <b id="sim-target-ebt" class="text-indigo-600 font-bold">4,745</b></span>
+            </div>
+          </div>
+
+          <!-- SLIDER 4: TOTAL DEBT -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs hover:border-indigo-300 transition">
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                <label for="slider-debt" class="text-xs font-bold text-slate-800">Tổng nợ phải trả (Total Debt)</label>
+                <span class="text-[11px] text-slate-400">(Tác động mẫu số X₄ Đòn bẩy)</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <span id="badge-debt-val" class="font-mono text-xs font-extrabold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">+10%</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-[10px] font-semibold text-slate-400 w-8 text-right">-50%</span>
+              <input 
+                type="range" 
+                id="slider-debt" 
+                min="-50" 
+                max="100" 
+                step="1" 
+                value="10" 
+                oninput="onSimSliderChange('debtPct', this.value)"
+                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+              >
+              <span class="text-[10px] font-semibold text-slate-400 w-8">+100%</span>
+            </div>
+            <div class="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
+              <span>Năm trước: <b id="sim-orig-debt" class="text-slate-700">15,600</b></span>
+              <span>Giả định năm tới: <b id="sim-target-debt" class="text-indigo-600 font-bold">17,160</b></span>
+            </div>
+          </div>
+
+          <!-- SLIDER 5: MARKET CAP / EQUITY -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs hover:border-indigo-300 transition">
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                <label for="slider-equity" class="text-xs font-bold text-slate-800">Vốn hóa TT / Vốn CSH</label>
+                <span class="text-[11px] text-slate-400">(Tác động tử số X₄ Định giá/Vốn)</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <span id="badge-equity-val" class="font-mono text-xs font-extrabold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">-20%</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-[10px] font-semibold text-slate-400 w-8 text-right">-70%</span>
+              <input 
+                type="range" 
+                id="slider-equity" 
+                min="-70" 
+                max="100" 
+                step="1" 
+                value="-20" 
+                oninput="onSimSliderChange('equityPct', this.value)"
+                class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+              >
+              <span class="text-[10px] font-semibold text-slate-400 w-8">+100%</span>
+            </div>
+            <div class="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
+              <span>Năm trước: <b id="sim-orig-equity" class="text-slate-700">75,000</b></span>
+              <span>Giả định năm tới: <b id="sim-target-equity" class="text-indigo-600 font-bold">60,000</b></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: FORECAST TRAJECTORY & OUTCOME CARD (lg:col-span-5) -->
+        <div class="lg:col-span-5 flex flex-col justify-between space-y-4">
+          
+          <!-- SCORE TRAJECTORY CARD -->
+          <div class="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm relative overflow-hidden flex-1">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs uppercase font-bold tracking-wider text-slate-500 flex items-center gap-1.5">
+                <i data-lucide="milestone" class="w-3.5 h-3.5 text-indigo-600"></i>
+                Dự Báo Quỹ Đạo Sức Khỏe Tài Chính
+              </span>
+              <span id="sim-outcome-badge" class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
+                TRƯỢT XUỐNG VÙNG XÁM
+              </span>
+            </div>
+
+            <!-- BEFORE VS AFTER TRAJECTORY -->
+            <div class="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-100 items-center">
+              <div class="text-left">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Năm <span id="sim-card-base-year">2025</span> (Thực tế)</span>
+                <div class="text-2xl sm:text-3xl font-black text-slate-700" id="sim-score-base">3.45</div>
+                <span class="text-[11px] font-bold text-emerald-600" id="sim-zone-base">Vùng An Toàn</span>
+              </div>
+              <div class="text-right border-l border-slate-200 pl-3">
+                <span class="text-[10px] uppercase font-bold text-indigo-600 block mb-0.5">Năm <span id="sim-card-proj-year">2026</span> (Dự phóng)</span>
+                <div class="text-2xl sm:text-3xl font-black text-indigo-700" id="sim-score-proj">2.28</div>
+                <span class="text-[11px] font-bold text-amber-600" id="sim-zone-proj">Vùng Xám Cảnh Báo</span>
+              </div>
+            </div>
+
+            <!-- DELTA SHIFT BANNER -->
+            <div class="mt-3 p-2.5 rounded-xl text-xs font-semibold flex items-center justify-between bg-rose-50 border border-rose-200 text-rose-800" id="sim-delta-banner">
+              <span class="flex items-center gap-1.5">
+                <i data-lucide="trending-down" class="w-4 h-4 text-rose-600"></i>
+                <span>Biến thiên quỹ đạo:</span>
+              </span>
+              <span class="font-mono font-bold text-sm text-rose-700" id="sim-delta-score">-1.17 điểm</span>
+            </div>
+
+            <!-- COMPONENT SENSITIVITY IMPACTS -->
+            <div class="mt-3.5 space-y-1.5 text-xs">
+              <span class="text-[11px] font-bold text-slate-500 block uppercase tracking-wider">Độ nhạy các chỉ số thành phần:</span>
+              <div class="grid grid-cols-2 gap-2 text-[11px]">
+                <div class="p-2 rounded-lg bg-slate-50 border border-slate-100 flex flex-col justify-between">
+                  <span class="text-slate-600 font-semibold mb-0.5">X₃ (EBIT / TTS)</span>
+                  <span id="sim-x3-impact" class="font-mono font-bold text-rose-600">0.147 ➔ 0.098</span>
+                </div>
+                <div class="p-2 rounded-lg bg-slate-50 border border-slate-100 flex flex-col justify-between">
+                  <span class="text-slate-600 font-semibold mb-0.5">X₅ (Vòng quay DT)</span>
+                  <span id="sim-x5-impact" class="font-mono font-bold text-rose-600">1.160 ➔ 0.928</span>
+                </div>
+                <div class="p-2 rounded-lg bg-slate-50 border border-slate-100 flex flex-col justify-between">
+                  <span class="text-slate-600 font-semibold mb-0.5">X₄ (VCSH / Tổng nợ)</span>
+                  <span id="sim-x4-impact" class="font-mono font-bold text-rose-600">4.808 ➔ 3.497</span>
+                </div>
+                <div class="p-2 rounded-lg bg-slate-50 border border-slate-100 flex flex-col justify-between">
+                  <span class="text-slate-600 font-semibold mb-0.5">X₁ (Vốn LĐ / TTS)</span>
+                  <span id="sim-x1-impact" class="font-mono font-bold text-slate-700">0.386 ➔ 0.352</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SCENARIO ADVISORY BOX -->
+          <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-2xl p-4 sm:p-5 shadow-sm">
+            <div class="flex items-center gap-2 mb-2">
+              <i data-lucide="compass" class="w-4 h-4 text-indigo-400"></i>
+              <h3 class="text-xs uppercase font-bold tracking-wider text-indigo-300">Nhận Định & Khuyến Nghị Quản Trị Dòng Tiền</h3>
+            </div>
+            <div id="sim-advisory-text" class="text-xs text-slate-300 leading-relaxed space-y-2">
+              Đang tải nhận định kịch bản mô phỏng...
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
     <!-- MULTI-YEAR FINANCIAL DATA MATRIX INPUT -->
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div class="p-5 sm:px-6 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4 bg-slate-50/70">
@@ -466,6 +786,51 @@
     let zscoreChartInstance = null;
     let componentsChartInstance = null;
 
+    // What-If Scenario Simulation Configuration
+    let simConfig = {
+      enabled: true,
+      revPct: -20,     // Doanh thu thuần: -20%
+      intPct: 30,      // Chi phí lãi vay: +30%
+      ebtPct: -35,     // Lợi nhuận trước thuế: -35%
+      debtPct: 10,     // Tổng nợ phải trả: +10%
+      equityPct: -20   // Vốn hóa TT / Vốn CSH: -20%
+    };
+
+    const SIM_PRESETS = {
+      stress_prompt: {
+        revPct: -20,
+        intPct: 30,
+        ebtPct: -35,
+        debtPct: 10,
+        equityPct: -20,
+        title: 'Doanh thu -20% & Lãi vay +30% (Stress Test)'
+      },
+      crisis: {
+        revPct: -35,
+        intPct: 50,
+        ebtPct: -70,
+        debtPct: 25,
+        equityPct: -45,
+        title: 'Khủng hoảng cực đoan'
+      },
+      base: {
+        revPct: 0,
+        intPct: 0,
+        ebtPct: 0,
+        debtPct: 0,
+        equityPct: 0,
+        title: 'Cơ sở (0% biến động)'
+      },
+      bull: {
+        revPct: 25,
+        intPct: -10,
+        ebtPct: 35,
+        debtPct: -5,
+        equityPct: 30,
+        title: 'Tăng trưởng bứt phá'
+      }
+    };
+
     // Fields required for Altman calculation (Z and Z' use all 5 financial ratios)
     const METRIC_DEFINITIONS = [
       { id: 'tsnh', name: 'Tài sản ngắn hạn', code: 'TSNH', desc: 'Tiền, khoản phải thu, hàng tồn kho...', requiredFor: ['Z', 'Zprime'] },
@@ -559,6 +924,7 @@
       loadSavedState();
       updateYearInputs();
       updateYearBadge();
+      initSimUI();
       renderMatrixHeaders();
       renderMatrixBody();
       updateModelCardStyles();
@@ -693,27 +1059,41 @@
           </tr>
         `;
       }
+    }
 
-      // 2. Table 2: Calculation Results Header
+    function renderResultsHeaders(simRes) {
       const resultsThead = document.getElementById('results-thead');
-      if (resultsThead) {
-        resultsThead.innerHTML = `
-          <tr class="border-b border-slate-200 text-slate-700 text-xs uppercase font-bold tracking-wider bg-slate-50">
-            <th rowspan="2" class="py-3 px-4 w-72 align-middle border-r border-slate-200">Chỉ Số Đánh Giá</th>
-            <th rowspan="2" class="py-3 px-2 w-28 text-center align-middle border-r border-slate-200">Ý Nghĩa Kinh Tế</th>
-            <th colspan="${years.length}" class="py-2.5 px-3 text-center font-extrabold text-indigo-700 bg-indigo-50 border-b border-indigo-200 text-sm tracking-wider">
-              ${rangeText}
+      if (!resultsThead) return;
+      const startYear = years[0];
+      const endYear = years[years.length - 1];
+      const hasSim = simConfig.enabled && simRes;
+      const totalColSpan = years.length + (hasSim ? 1 : 0);
+      const rangeText = `${startYear} - ${endYear}` + (hasSim ? ` & Dự báo ${simRes.year}` : '');
+
+      resultsThead.innerHTML = `
+        <tr class="border-b border-slate-200 text-slate-700 text-xs uppercase font-bold tracking-wider bg-slate-50">
+          <th rowspan="2" class="py-3 px-4 w-72 align-middle border-r border-slate-200">Chỉ Số Đánh Giá</th>
+          <th rowspan="2" class="py-3 px-2 w-28 text-center align-middle border-r border-slate-200">Ý Nghĩa Kinh Tế</th>
+          <th colspan="${totalColSpan}" class="py-2.5 px-3 text-center font-extrabold text-indigo-700 bg-indigo-50 border-b border-indigo-200 text-sm tracking-wider">
+            ${rangeText}
+          </th>
+        </tr>
+        <tr class="border-b border-slate-200 text-slate-700 text-xs uppercase font-bold tracking-wider bg-slate-50/60">
+          ${years.map(y => `
+            <th class="py-2.5 px-3 text-center w-32 font-bold text-slate-800 border-r border-slate-200">
+              <span class="font-extrabold text-slate-900">${y}</span>
             </th>
-          </tr>
-          <tr class="border-b border-slate-200 text-slate-700 text-xs uppercase font-bold tracking-wider bg-slate-50/60">
-            ${years.map(y => `
-              <th class="py-2.5 px-3 text-center w-32 font-bold text-slate-800 border-r border-slate-200 last:border-r-0">
-                <span class="font-extrabold text-slate-900">${y}</span>
-              </th>
-            `).join('')}
-          </tr>
-        `;
-      }
+          `).join('')}
+          ${hasSim ? `
+            <th class="py-2 px-3 text-center w-36 font-bold text-indigo-900 bg-indigo-100/70 border-l-2 border-indigo-300 last:border-r-0">
+              <div class="flex items-center justify-center gap-1.5">
+                <span class="font-black text-indigo-900">${simRes.year}</span>
+                <span class="bg-indigo-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold shadow-xs">Dự phóng</span>
+              </div>
+            </th>
+          ` : ''}
+        </tr>
+      `;
     }
 
     function renderMatrixBody() {
@@ -758,6 +1138,278 @@
       currentData[metricId][year] = parseFloat(value) || 0;
       calculateAll();
       saveState();
+    }
+
+    // ==========================================
+    // SIMULATION ENGINE & CONTROLS
+    // ==========================================
+    function initSimUI() {
+      // Sync checkbox
+      const toggle = document.getElementById('sim-toggle-checkbox');
+      if (toggle) toggle.checked = simConfig.enabled;
+
+      // Sync sliders & badges
+      const sliders = [
+        { id: 'slider-rev', badge: 'badge-rev-val', key: 'revPct' },
+        { id: 'slider-int', badge: 'badge-int-val', key: 'intPct' },
+        { id: 'slider-ebt', badge: 'badge-ebt-val', key: 'ebtPct' },
+        { id: 'slider-debt', badge: 'badge-debt-val', key: 'debtPct' },
+        { id: 'slider-equity', badge: 'badge-equity-val', key: 'equityPct' }
+      ];
+
+      sliders.forEach(s => {
+        const el = document.getElementById(s.id);
+        const badge = document.getElementById(s.badge);
+        const val = simConfig[s.key];
+        if (el) el.value = val;
+        if (badge) {
+          const sign = val > 0 ? '+' : '';
+          badge.innerText = `${sign}${val}%`;
+          if (val < 0) {
+            badge.className = 'font-mono text-xs font-extrabold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200';
+          } else if (val > 0) {
+            badge.className = 'font-mono text-xs font-extrabold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200';
+          } else {
+            badge.className = 'font-mono text-xs font-extrabold px-2 py-0.5 rounded-md bg-slate-50 text-slate-700 border border-slate-200';
+          }
+        }
+      });
+    }
+
+    function onSimSliderChange(field, value) {
+      const num = parseFloat(value) || 0;
+      simConfig[field] = num;
+      initSimUI();
+      calculateAll();
+      saveState();
+    }
+
+    function applySimPreset(presetKey) {
+      const preset = SIM_PRESETS[presetKey];
+      if (!preset) return;
+      simConfig.revPct = preset.revPct;
+      simConfig.intPct = preset.intPct;
+      simConfig.ebtPct = preset.ebtPct;
+      simConfig.debtPct = preset.debtPct;
+      simConfig.equityPct = preset.equityPct;
+
+      initSimUI();
+      calculateAll();
+      saveState();
+    }
+
+    function resetSimSliders() {
+      applySimPreset('stress_prompt');
+    }
+
+    function toggleSimulation(checked) {
+      simConfig.enabled = checked;
+      calculateAll();
+      saveState();
+    }
+
+    function calculateSimulatedYear(baseYear, resultsPerYear) {
+      if (!baseYear || !resultsPerYear || !resultsPerYear[baseYear]) return null;
+
+      const baseRes = resultsPerYear[baseYear];
+      const projYear = baseYear + 1;
+
+      // Update UI year labels
+      const baseYearLabel = document.getElementById('sim-base-year-label');
+      if (baseYearLabel) baseYearLabel.innerText = baseYear;
+      const cardBaseYear = document.getElementById('sim-card-base-year');
+      if (cardBaseYear) cardBaseYear.innerText = baseYear;
+      const badgeSimYear = document.getElementById('badge-sim-year');
+      if (badgeSimYear) badgeSimYear.innerText = `Dự phóng ${projYear}`;
+      const cardProjYear = document.getElementById('sim-card-proj-year');
+      if (cardProjYear) cardProjYear.innerText = projYear;
+
+      const getM = (id) => (currentData[id] && currentData[id][baseYear] !== undefined) ? parseFloat(currentData[id][baseYear]) || 0 : 0;
+
+      const baseTsnh  = getM('tsnh');
+      const baseNnh   = getM('nnh');
+      const baseTts   = getM('tts');
+      const baseLncpp = getM('lncpp');
+      const baseLntt  = getM('lntt');
+      const baseCplv  = getM('cplv');
+      const baseVhtt  = getM('vhtt');
+      const baseTnpt  = getM('tnpt');
+      const baseDtt   = getM('dtt');
+
+      // Factors
+      const revFactor = 1 + (simConfig.revPct / 100);
+      const intFactor = 1 + (simConfig.intPct / 100);
+      const ebtFactor = 1 + (simConfig.ebtPct / 100);
+      const debtFactor = 1 + (simConfig.debtPct / 100);
+      const equityFactor = 1 + (simConfig.equityPct / 100);
+
+      // Projected Values
+      const simDtt = Math.max(0, baseDtt * revFactor);
+      const simCplv = Math.max(0, baseCplv * intFactor);
+      const simLntt = baseLntt * ebtFactor;
+      const simTnpt = Math.max(1, baseTnpt * debtFactor);
+      const simVhtt = Math.max(1, baseVhtt * equityFactor);
+      const simNnh = Math.max(0, baseNnh * debtFactor);
+      const simTsnh = Math.max(0, baseTsnh * (1 + (simConfig.revPct / 100) * 0.5));
+      const simNetIncome = simLntt > 0 ? simLntt * 0.8 : simLntt;
+      const simLncpp = baseLncpp + simNetIncome;
+      const deltaAssets = (simTsnh - baseTsnh) + (simTnpt - baseTnpt) * 0.4;
+      const simTts = Math.max(1, baseTts + deltaAssets);
+
+      // Update target numbers under sliders
+      const elOrigRev = document.getElementById('sim-orig-rev');
+      const elTargetRev = document.getElementById('sim-target-rev');
+      if (elOrigRev) elOrigRev.innerText = Math.round(baseDtt).toLocaleString('vi-VN');
+      if (elTargetRev) elTargetRev.innerText = Math.round(simDtt).toLocaleString('vi-VN');
+
+      const elOrigInt = document.getElementById('sim-orig-int');
+      const elTargetInt = document.getElementById('sim-target-int');
+      if (elOrigInt) elOrigInt.innerText = Math.round(baseCplv).toLocaleString('vi-VN');
+      if (elTargetInt) elTargetInt.innerText = Math.round(simCplv).toLocaleString('vi-VN');
+
+      const elOrigEbt = document.getElementById('sim-orig-ebt');
+      const elTargetEbt = document.getElementById('sim-target-ebt');
+      if (elOrigEbt) elOrigEbt.innerText = Math.round(baseLntt).toLocaleString('vi-VN');
+      if (elTargetEbt) elTargetEbt.innerText = Math.round(simLntt).toLocaleString('vi-VN');
+
+      const elOrigDebt = document.getElementById('sim-orig-debt');
+      const elTargetDebt = document.getElementById('sim-target-debt');
+      if (elOrigDebt) elOrigDebt.innerText = Math.round(baseTnpt).toLocaleString('vi-VN');
+      if (elTargetDebt) elTargetDebt.innerText = Math.round(simTnpt).toLocaleString('vi-VN');
+
+      const elOrigEquity = document.getElementById('sim-orig-equity');
+      const elTargetEquity = document.getElementById('sim-target-equity');
+      if (elOrigEquity) elOrigEquity.innerText = Math.round(baseVhtt).toLocaleString('vi-VN');
+      if (elTargetEquity) elTargetEquity.innerText = Math.round(simVhtt).toLocaleString('vi-VN');
+
+      // Ratios
+      const x1 = (simTsnh - simNnh) / simTts;
+      const x2 = simLncpp / simTts;
+      const ebit = simLntt + simCplv;
+      const x3 = ebit / simTts;
+      const x4 = simVhtt / simTnpt;
+      const x5 = simDtt / simTts;
+
+      let score = 0;
+      let zone = 'safe';
+      const th = MODEL_THRESHOLDS[currentModel];
+
+      if (currentModel === 'Z') {
+        score = 1.2 * x1 + 1.4 * x2 + 3.3 * x3 + 0.6 * x4 + 0.999 * x5;
+        if (score >= th.safe) zone = 'safe';
+        else if (score < th.distress) zone = 'distress';
+        else zone = 'grey';
+      } else {
+        score = 0.717 * x1 + 0.847 * x2 + 3.107 * x3 + 0.420 * x4 + 0.998 * x5;
+        if (score >= th.safe) zone = 'safe';
+        else if (score < th.distress) zone = 'distress';
+        else zone = 'grey';
+      }
+
+      const deltaScore = score - baseRes.score;
+
+      // Update Card
+      const scoreBaseEl = document.getElementById('sim-score-base');
+      if (scoreBaseEl) scoreBaseEl.innerText = baseRes.score.toFixed(2);
+      const zoneBaseEl = document.getElementById('sim-zone-base');
+      if (zoneBaseEl) {
+        zoneBaseEl.innerText = baseRes.zone === 'safe' ? 'Vùng An Toàn' : (baseRes.zone === 'grey' ? 'Vùng Xám' : 'Vùng Nguy Cơ');
+        zoneBaseEl.className = baseRes.zone === 'safe' ? 'text-[11px] font-bold text-emerald-600' : (baseRes.zone === 'grey' ? 'text-[11px] font-bold text-amber-600' : 'text-[11px] font-bold text-rose-600');
+      }
+
+      const scoreProjEl = document.getElementById('sim-score-proj');
+      if (scoreProjEl) scoreProjEl.innerText = score.toFixed(2);
+      const zoneProjEl = document.getElementById('sim-zone-proj');
+      if (zoneProjEl) {
+        zoneProjEl.innerText = zone === 'safe' ? 'Vùng An Toàn' : (zone === 'grey' ? 'Vùng Xám Cảnh Báo' : 'Vùng Nguy Cơ Phá Sản');
+        zoneProjEl.className = zone === 'safe' ? 'text-[11px] font-bold text-emerald-600' : (zone === 'grey' ? 'text-[11px] font-bold text-amber-600' : 'text-[11px] font-bold text-rose-600');
+      }
+
+      // Outcome Badge
+      const outcomeBadge = document.getElementById('sim-outcome-badge');
+      if (outcomeBadge) {
+        if (zone === 'distress') {
+          outcomeBadge.innerText = baseRes.zone === 'distress' ? 'TIẾP TỤC Ở VÙNG NGUY CƠ' : 'TRƯỢT XUỐNG VÙNG NGUY CƠ';
+          outcomeBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800 border border-rose-300';
+        } else if (zone === 'grey') {
+          outcomeBadge.innerText = baseRes.zone === 'safe' ? 'TRƯỢT XUỐNG VÙNG XÁM' : 'DUY TRÌ VÙNG XÁM';
+          outcomeBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800 border border-amber-300';
+        } else {
+          outcomeBadge.innerText = baseRes.zone === 'safe' ? 'DUY TRÌ VÙNG AN TOÀN' : 'PHỤC HỒI LÊN VÙNG AN TOÀN';
+          outcomeBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300';
+        }
+      }
+
+      // Delta Banner
+      const deltaBanner = document.getElementById('sim-delta-banner');
+      const deltaScoreEl = document.getElementById('sim-delta-score');
+      if (deltaBanner && deltaScoreEl) {
+        if (deltaScore < -0.01) {
+          deltaBanner.className = 'mt-3 p-2.5 rounded-xl text-xs font-semibold flex items-center justify-between bg-rose-50 border border-rose-200 text-rose-800';
+          const firstSpan = deltaBanner.querySelector('span:first-child');
+          if (firstSpan) firstSpan.innerHTML = `<i data-lucide="trending-down" class="w-4 h-4 text-rose-600 inline mr-1"></i> <span>Biến thiên quỹ đạo:</span>`;
+          deltaScoreEl.innerText = `${deltaScore.toFixed(2)} điểm`;
+          deltaScoreEl.className = 'font-mono font-bold text-sm text-rose-700';
+        } else if (deltaScore > 0.01) {
+          deltaBanner.className = 'mt-3 p-2.5 rounded-xl text-xs font-semibold flex items-center justify-between bg-emerald-50 border border-emerald-200 text-emerald-800';
+          const firstSpan = deltaBanner.querySelector('span:first-child');
+          if (firstSpan) firstSpan.innerHTML = `<i data-lucide="trending-up" class="w-4 h-4 text-emerald-600 inline mr-1"></i> <span>Biến thiên quỹ đạo:</span>`;
+          deltaScoreEl.innerText = `+${deltaScore.toFixed(2)} điểm`;
+          deltaScoreEl.className = 'font-mono font-bold text-sm text-emerald-700';
+        } else {
+          deltaBanner.className = 'mt-3 p-2.5 rounded-xl text-xs font-semibold flex items-center justify-between bg-slate-50 border border-slate-200 text-slate-700';
+          const firstSpan = deltaBanner.querySelector('span:first-child');
+          if (firstSpan) firstSpan.innerHTML = `<i data-lucide="minus" class="w-4 h-4 text-slate-600 inline mr-1"></i> <span>Biến thiên quỹ đạo:</span>`;
+          deltaScoreEl.innerText = `0.00 điểm`;
+          deltaScoreEl.className = 'font-mono font-bold text-sm text-slate-700';
+        }
+      }
+
+      // Format Impact
+      const formatImpact = (bVal, sVal) => {
+        const diff = sVal - bVal;
+        const sign = diff >= 0 ? '+' : '';
+        const color = diff < -0.005 ? 'text-rose-600' : (diff > 0.005 ? 'text-emerald-600' : 'text-slate-600');
+        return `<span class="text-slate-400">${bVal.toFixed(3)} ➔</span> <span class="${color} font-bold">${sVal.toFixed(3)} (${sign}${diff.toFixed(3)})</span>`;
+      };
+
+      const x1El = document.getElementById('sim-x1-impact');
+      if (x1El) x1El.innerHTML = formatImpact(baseRes.x1, x1);
+      const x3El = document.getElementById('sim-x3-impact');
+      if (x3El) x3El.innerHTML = formatImpact(baseRes.x3, x3);
+      const x4El = document.getElementById('sim-x4-impact');
+      if (x4El) x4El.innerHTML = formatImpact(baseRes.x4, x4);
+      const x5El = document.getElementById('sim-x5-impact');
+      if (x5El) x5El.innerHTML = formatImpact(baseRes.x5, x5);
+
+      // Advisory text
+      const advisoryEl = document.getElementById('sim-advisory-text');
+      if (advisoryEl) {
+        let advice = '';
+        if (zone === 'distress') {
+          advice = `<b>⚠️ Cảnh báo quỹ đạo nguy hiểm:</b> Dưới giả định doanh thu ${simConfig.revPct >= 0 ? '+' : ''}${simConfig.revPct}% và chi phí lãi vay ${simConfig.intPct >= 0 ? '+' : ''}${simConfig.intPct}%, điểm Z-Score trượt xuống mức <b>${score.toFixed(2)}</b> (rơi vào Vùng Nguy Cơ Phá Sản). Áp lực thanh toán nợ vay và tỷ suất EBIT/TTS giảm sút tạo rủi ro mất khả năng thanh toán nghiêm trọng. <br><br><b>Khuyến nghị hành động:</b> (1) Khẩn trương tái cơ cấu các khoản nợ vay ngắn hạn sang kỳ hạn dài hơn để giảm áp lực dòng tiền; (2) Tinh gọn chi phí bán hàng & quản lý doanh nghiệp; (3) Tạm dừng mở rộng vốn đầu tư TSCĐ và tập trung thu hồi nợ đọng.`;
+        } else if (zone === 'grey') {
+          advice = `<b>⚠️ Cảnh báo trượt vào Vùng Xám:</b> Điểm Z-Score hạ xuống mức <b>${score.toFixed(2)}</b>, mất đi tấm đệm an toàn tài chính. Sự suy giảm của vòng quay tài sản và biên EBIT khiến doanh nghiệp dễ bị tổn thương nếu thị trường tiếp tục biến động bất lợi. <br><br><b>Khuyến nghị hành động:</b> (1) Kiểm soát chặt chẽ chính sách tín dụng thương mại và vòng quay hàng tồn kho; (2) Đàm phán với ngân hàng đối tác để giữ hạn mức tín dụng và biên độ lãi suất ưu đãi; (3) Tối ưu hóa vốn lưu động ròng.`;
+        } else {
+          if (deltaScore < -0.2) {
+            advice = `<b>✅ Vẫn duy trì Vùng An Toàn:</b> Mặc dù chịu áp lực từ các giả định thị trường khó khăn khiến Z-Score giảm ${Math.abs(deltaScore).toFixed(2)} điểm, doanh nghiệp vẫn bảo toàn được vùng an toàn với điểm số <b>${score.toFixed(2)}</b> nhờ nền tảng vốn chủ sở hữu và tích lũy lợi nhuận quá khứ dồi dào. <br><br><b>Khuyến nghị:</b> Tiếp tục kiểm soát chi phí lãi vay và duy trì cơ cấu nợ lành mạnh để phòng ngừa rủi ro chu kỳ kéo dài.`;
+          } else {
+            advice = `<b>🚀 Kịch bản tăng trưởng vững chắc:</b> Tình hình tài chính dự phóng đạt mức rất tích cực với Z-Score <b>${score.toFixed(2)}</b> (Vùng An Toàn). Hiệu quả sinh lời của tài sản và đòn bẩy tài chính đều được củng cố. <br><br><b>Khuyến nghị:</b> Tận dụng vị thế tài chính mạnh để đàm phán chi phí vốn tối ưu hơn và tích lũy thêm thặng dư dự phòng.`;
+          }
+        }
+        advisoryEl.innerHTML = advice;
+      }
+
+      return {
+        year: projYear,
+        x1, x2, x3, x4, x5,
+        ebit,
+        score,
+        zone,
+        deltaScore,
+        baseScore: baseRes.score,
+        baseZone: baseRes.zone
+      };
     }
 
     // ==========================================
@@ -823,21 +1475,30 @@
         };
       });
 
-      renderResultsTable(resultsPerYear);
-      updateChart(resultsPerYear);
+      // Calculate simulation result for next projected year
+      let simRes = null;
+      if (years.length > 0) {
+        simRes = calculateSimulatedYear(years[years.length - 1], resultsPerYear);
+      }
+
+      renderResultsTable(resultsPerYear, simRes);
+      updateChart(resultsPerYear, simRes);
       updateHighlightBox(resultsPerYear);
       updateAIDiagnostic(resultsPerYear);
       if (componentsChartInstance || (document.getElementById('components-chart-wrapper') && !document.getElementById('components-chart-wrapper').classList.contains('hidden'))) {
-        updateComponentsChart(resultsPerYear);
+        updateComponentsChart(resultsPerYear, simRes);
       }
+      if (window.lucide) lucide.createIcons();
     }
 
     // ==========================================
     // RENDER RESULTS TABLE
     // ==========================================
-    function renderResultsTable(res) {
+    function renderResultsTable(res, simRes) {
+      renderResultsHeaders(simRes);
       const tbody = document.getElementById('results-tbody');
       const tfoot = document.getElementById('results-tfoot');
+      const hasSim = simConfig.enabled && simRes;
 
       const COMPONENT_ROWS = [
         { key: 'x1', label: 'X₁ = Vốn LĐ ròng / TTS', meaning: 'Khả năng thanh toán tức thời' },
@@ -848,6 +1509,24 @@
       ];
 
       tbody.innerHTML = COMPONENT_ROWS.map(comp => {
+        let simColHtml = '';
+        if (hasSim) {
+          const simVal = simRes[comp.key];
+          const latestVal = res[years[years.length - 1]] ? res[years[years.length - 1]][comp.key] : null;
+          let trendSimIcon = '';
+          if (latestVal !== null) {
+            const diff = simVal - latestVal;
+            if (diff > 0.001) trendSimIcon = '<span class="text-emerald-600 font-bold ml-1">↑</span>';
+            else if (diff < -0.001) trendSimIcon = '<span class="text-rose-600 font-bold ml-1">↓</span>';
+          }
+          simColHtml = `
+            <td class="py-2 px-3 text-center font-mono font-bold text-indigo-900 bg-indigo-50/50 border-l-2 border-indigo-300">
+              <span>${simVal.toFixed(4)}</span>
+              ${trendSimIcon}
+            </td>
+          `;
+        }
+
         return `
           <tr class="hover:bg-slate-50 transition">
             <td class="py-2.5 px-4 font-semibold text-slate-800">
@@ -872,11 +1551,41 @@
                 </td>
               `;
             }).join('')}
+            ${simColHtml}
           </tr>
         `;
       }).join('');
 
       // Render Final Z-Score Footer Rows
+      let simScoreCol = '';
+      let simZoneCol = '';
+      if (hasSim) {
+        let simColor = 'text-emerald-600';
+        if (simRes.zone === 'distress') simColor = 'text-rose-600';
+        else if (simRes.zone === 'grey') simColor = 'text-amber-600';
+
+        simScoreCol = `
+          <td class="py-3 px-3 text-center font-mono font-black text-sm sm:text-base ${simColor} bg-indigo-100/70 border-l-2 border-indigo-300">
+            ${simRes.score.toFixed(3)}
+          </td>
+        `;
+
+        let simBadge = '';
+        if (simRes.zone === 'safe') {
+          simBadge = '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">An toàn</span>';
+        } else if (simRes.zone === 'grey') {
+          simBadge = '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">Vùng xám</span>';
+        } else {
+          simBadge = '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300">Nguy hiểm</span>';
+        }
+
+        simZoneCol = `
+          <td class="py-2.5 px-3 text-center bg-indigo-100/50 border-l-2 border-indigo-300">
+            ${simBadge}
+          </td>
+        `;
+      }
+
       tfoot.innerHTML = `
         <tr class="bg-indigo-50/60 border-t-2 border-indigo-200">
           <td class="py-3 px-4 font-bold text-slate-900 text-sm">
@@ -897,6 +1606,7 @@
               </td>
             `;
           }).join('')}
+          ${simScoreCol}
         </tr>
         <tr>
           <td class="py-2.5 px-4 font-semibold text-slate-600">
@@ -921,6 +1631,7 @@
               </td>
             `;
           }).join('')}
+          ${simZoneCol}
         </tr>
       `;
     }
@@ -928,13 +1639,19 @@
     // ==========================================
     // CHART.JS: COMBO BAR & LINE CHART
     // ==========================================
-    function updateChart(res) {
+    function updateChart(res, simRes) {
+      const hasSim = simConfig.enabled && simRes;
       const labels = years.map(y => `Năm ${y}`);
       const scores = years.map(y => res[y] ? Number(res[y].score.toFixed(3)) : 0);
 
+      if (hasSim) {
+        labels.push(`Năm ${simRes.year} [Dự phóng]`);
+        scores.push(Number(simRes.score.toFixed(3)));
+      }
+
       const th = MODEL_THRESHOLDS[currentModel];
-      const safeThresholdArray = years.map(() => th.safe);
-      const distressThresholdArray = years.map(() => th.distress);
+      const safeThresholdArray = labels.map(() => th.safe);
+      const distressThresholdArray = labels.map(() => th.distress);
 
       // Bar Colors dynamic per zone
       const barColors = years.map(y => {
@@ -950,6 +1667,19 @@
         if (zone === 'grey') return '#d97706';
         return '#dc2626';
       });
+
+      if (hasSim) {
+        if (simRes.zone === 'safe') {
+          barColors.push('rgba(16, 185, 129, 0.55)');
+          barBorders.push('#059669');
+        } else if (simRes.zone === 'grey') {
+          barColors.push('rgba(245, 158, 11, 0.55)');
+          barBorders.push('#d97706');
+        } else {
+          barColors.push('rgba(239, 68, 68, 0.55)');
+          barBorders.push('#dc2626');
+        }
+      }
 
       const ctx = document.getElementById('zscoreComboChart').getContext('2d');
 
@@ -968,12 +1698,16 @@
               data: scores,
               borderColor: '#4f46e5', // Indigo-600
               borderWidth: 3,
-              pointBackgroundColor: '#ffffff',
-              pointBorderColor: '#4f46e5',
+              pointBackgroundColor: labels.map((_, i) => (hasSim && i === labels.length - 1) ? '#6366f1' : '#ffffff'),
+              pointBorderColor: labels.map((_, i) => (hasSim && i === labels.length - 1) ? '#4338ca' : '#4f46e5'),
               pointBorderWidth: 2.5,
-              pointRadius: 6,
-              pointHoverRadius: 8,
-              tension: 0.3,
+              pointRadius: labels.map((_, i) => (hasSim && i === labels.length - 1) ? 8 : 6),
+              pointHoverRadius: labels.map((_, i) => (hasSim && i === labels.length - 1) ? 10 : 8),
+              tension: 0.25,
+              segment: {
+                borderDash: ctx => (hasSim && ctx.p1DataIndex === labels.length - 1) ? [6, 4] : undefined,
+                borderColor: ctx => (hasSim && ctx.p1DataIndex === labels.length - 1) ? '#818cf8' : undefined
+              },
               order: 1
             },
             // 2. Bar chart per year
@@ -983,7 +1717,7 @@
               data: scores,
               backgroundColor: barColors,
               borderColor: barBorders,
-              borderWidth: 1.5,
+              borderWidth: labels.map((_, i) => (hasSim && i === labels.length - 1) ? 2.5 : 1.5),
               borderRadius: 8,
               barPercentage: 0.45,
               order: 2
@@ -1040,6 +1774,13 @@
               callbacks: {
                 afterBody: function(context) {
                   const dataIndex = context[0].dataIndex;
+                  if (hasSim && dataIndex === labels.length - 1) {
+                    let status = 'Vùng an toàn (Sức khỏe tốt)';
+                    if (simRes.zone === 'grey') status = 'Vùng xám (Cần cảnh báo)';
+                    if (simRes.zone === 'distress') status = 'Vùng nguy cơ phá sản cao';
+                    const sign = simRes.deltaScore >= 0 ? '+' : '';
+                    return `\n[KỊCH BẢN MÔ PHỎNG DỰ BÁO]\nTrạng thái: ${status}\nBiến thiên: ${sign}${simRes.deltaScore.toFixed(2)} điểm\nX₁ (Vốn LĐ): ${simRes.x1.toFixed(3)}\nX₃ (EBIT/TTS): ${simRes.x3.toFixed(3)}\nX₄ (VCSH/Nợ): ${simRes.x4.toFixed(3)}\nX₅ (Vòng quay): ${simRes.x5.toFixed(3)}`;
+                  }
                   const targetYear = years[dataIndex];
                   const z = res[targetYear];
                   if (!z) return '';
@@ -1230,7 +1971,7 @@
       }
     }
 
-    function updateComponentsChart(res) {
+    function updateComponentsChart(res, simRes) {
       if (!res) {
         calculateAll();
         return;
@@ -1240,13 +1981,22 @@
         componentsChartInstance.destroy();
       }
 
+      const hasSim = simConfig.enabled && simRes;
       const labels = years.map(y => `Năm ${y}`);
+      if (hasSim) labels.push(`Năm ${simRes.year} (Dự phóng)`);
+
+      const getCompData = (key) => {
+        const arr = years.map(y => res[y] ? Number(res[y][key].toFixed(3)) : 0);
+        if (hasSim) arr.push(Number(simRes[key].toFixed(3)));
+        return arr;
+      };
+
       const datasets = [
-        { label: 'X₁ (Vốn LĐ ròng / TTS)', data: years.map(y => res[y] ? res[y].x1.toFixed(3) : 0), backgroundColor: '#3b82f6' },
-        { label: 'X₂ (LN giữ lại / TTS)', data: years.map(y => res[y] ? res[y].x2.toFixed(3) : 0), backgroundColor: '#8b5cf6' },
-        { label: 'X₃ (EBIT / TTS)', data: years.map(y => res[y] ? res[y].x3.toFixed(3) : 0), backgroundColor: '#10b981' },
-        { label: 'X₄ (VCSH / Tổng nợ)', data: years.map(y => res[y] ? res[y].x4.toFixed(3) : 0), backgroundColor: '#f59e0b' },
-        { label: 'X₅ (DTT / TTS)', data: years.map(y => res[y] ? res[y].x5.toFixed(3) : 0), backgroundColor: '#06b6d4' }
+        { label: 'X₁ (Vốn LĐ ròng / TTS)', data: getCompData('x1'), backgroundColor: '#3b82f6' },
+        { label: 'X₂ (LN giữ lại / TTS)', data: getCompData('x2'), backgroundColor: '#8b5cf6' },
+        { label: 'X₃ (EBIT / TTS)', data: getCompData('x3'), backgroundColor: '#10b981' },
+        { label: 'X₄ (VCSH / Tổng nợ)', data: getCompData('x4'), backgroundColor: '#f59e0b' },
+        { label: 'X₅ (DTT / TTS)', data: getCompData('x5'), backgroundColor: '#06b6d4' }
       ];
 
       componentsChartInstance = new Chart(ctx, {
@@ -1280,6 +2030,7 @@
 
       updateYearInputs();
       updateYearBadge();
+      initSimUI();
 
       renderMatrixHeaders();
       renderMatrixBody();
@@ -1308,7 +2059,8 @@
         const state = {
           currentModel,
           years,
-          currentData
+          currentData,
+          simConfig
         };
         localStorage.setItem('altman_zscore_state', JSON.stringify(state));
       } catch (e) {
@@ -1330,6 +2082,9 @@
             years = parsed.years;
           }
           if (parsed.currentData) currentData = parsed.currentData;
+          if (parsed.simConfig) {
+            simConfig = { ...simConfig, ...parsed.simConfig };
+          }
         }
       } catch (e) {
         console.warn('LocalStorage load failed, using defaults:', e);
