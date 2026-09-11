@@ -1,0 +1,22 @@
+{
+  "name": "calc-zscore-analytics",
+  "version": "2.1.0",
+  "description": "Hệ thống phân tích và dự báo nguy cơ kiệt quệ tài chính doanh nghiệp ứng dụng Altman Z-Score và Z'-Score kết nối dữ liệu sàn chứng khoán",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0"
+  },
+  "keywords": [
+    "altman-z-score",
+    "financial-analysis",
+    "stock-vietnam",
+    "bctc",
+    "hose",
+    "hnx"
+  ],
+  "author": "CAZRALO",
+  "license": "MIT"
+}

@@ -8,20 +8,25 @@ Hệ thống phân tích và dự báo nguy cơ kiệt quệ tài chính / phá 
 
 ## 🌟 Tính Năng Nổi Bật
 
-1. **Hỗ trợ 2 mô hình học thuật chuẩn Altman**:
+1. **Liên kết Sàn Chứng Khoán & Tự Động Trích Xuất BCTC (Vercel Serverless API)**:
+   - **Thanh tìm kiếm thông minh (Smart Autocomplete)**: Cho phép tìm kiếm bất kỳ doanh nghiệp nào trên 3 sàn **HOSE, HNX, UPCoM** bằng mã chứng khoán (VD: `HPG`, `VNM`, `FPT`, `MWG`...) hoặc tên tiếng Việt có dấu/không dấu (VD: *Hòa Phát, Vinamilk, Thế Giới Di Động, Hóa chất Đức Giang*...).
+   - **Serverless Data Engine (`/api/stock`)**: Tự động bóc tách chuẩn xác 9 chỉ tiêu BCTC qua các năm từ cổng thông tin tài chính: Tài sản ngắn hạn, Nợ ngắn hạn, Tổng tài sản, Lợi nhuận chưa phân phối, Tổng nợ phải trả, Vốn chủ sở hữu / Vốn hóa, Doanh thu thuần, LNTT, Chi phí lãi vay.
+   - **Tự động đổ số liệu & Chẩn đoán tức thì**: Điền tự động vào bảng ma trận, đồng bộ dải năm và vẽ lại toàn bộ biểu đồ Z-Score / Z'-Score chỉ sau 1 cú click.
+   - **Cảnh báo thông minh**: Tự động nhận diện các doanh nghiệp thuộc khối Ngân hàng / Bảo hiểm / Tài chính đặc thù (vốn không áp dụng mô hình Altman sản xuất thông thường) và đưa ra khuyến nghị phù hợp.
+2. **Hỗ trợ 2 mô hình học thuật chuẩn Altman**:
    - **Mô hình Z (1968)**: Dành cho doanh nghiệp sản xuất niêm yết (5 biến số, vốn hóa thị trường).
    - **Mô hình Z' (1983)**: Dành cho doanh nghiệp tính theo giá trị sổ sách vốn chủ sở hữu (5 biến số).
-2. **Tùy biến dải năm phân tích linh hoạt (Custom Year Range)**:
+3. **Tùy biến dải năm phân tích linh hoạt (Custom Year Range)**:
    - Cho phép người dùng **tự do nhập Năm đầu và Năm cuối** (ví dụ: 2019 - 2024, 2020 - 2025,...) thay vì bị cố định.
    - Tự động sinh bảng nhập liệu và biểu đồ tương ứng với số năm được chọn.
    - Tự động kiểm tra tính hợp lệ và cập nhật kết quả tức thì theo thời gian thực (Reactive calculation).
    - Lưu trữ dữ liệu cục bộ (`localStorage`) tự động, không bị mất số liệu khi tải lại trang.
-3. **Biểu đồ Cột kết hợp Đường (Combo Bar & Line Chart)**:
+4. **Biểu đồ Cột kết hợp Đường (Combo Bar & Line Chart)**:
    - **Dạng cột (Bar)**: Thể hiện điểm số Z-Score từng năm với màu sắc động ứng với từng vùng rủi ro (Xanh lá = An toàn, Vàng cam = Vùng xám cảnh báo, Đỏ = Nguy cơ kiệt quệ tài chính).
    - **Dạng đường (Line)**: Đường xu hướng kết nối điểm Z-Score qua các năm giúp nhận biết ngay doanh nghiệp đang cải thiện hay xấu đi.
    - **Vạch ngưỡng chuẩn (Threshold Lines)**: Đường nét đứt màu đỏ và xanh thể hiện ranh giới các vùng an toàn và nguy cơ.
    - **Biểu đồ bóc tách thành phần**: Phân tích chi tiết mức độ đóng góp của $X_1, X_2, X_3, X_4, X_5$.
-4. **Mô Phỏng Giả Định (What-If Scenario Simulation) & Dự Báo Tương Lai**:
+5. **Mô Phỏng Giả Định (What-If Scenario Simulation) & Dự Báo Tương Lai**:
    - Cho phép người dùng trực tiếp **kéo trượt điều chỉnh các giả định kinh doanh cốt lõi** cho năm tiếp theo: Biến động Doanh thu thuần, Chi phí lãi vay, Lợi nhuận trước thuế (EBT), Tổng nợ phải trả và Vốn hóa thị trường.
    - **Tích hợp kịch bản Stress-Test 1-Click**:
      - *Cảnh báo suy thoái*: Doanh thu $-20\%$ và Chi phí lãi vay $+30\%$.
@@ -30,10 +35,10 @@ Hệ thống phân tích và dự báo nguy cơ kiệt quệ tài chính / phá 
      - *Tăng trưởng bứt phá*: Doanh thu $+25\%$, Lãi vay $-10\%$, LNTT $+35\%$.
    - **Chiếu trực tiếp quỹ đạo lên biểu đồ**: Biểu đồ chính tự động nối thêm cột dự phóng kèm đường xu thế nét đứt, cho thấy tức thì điểm số Z-Score sẽ trượt xuống vùng rủi ro nào.
    - **Bóc tách độ nhạy thành phần ($X_1 - X_5$) & Tư vấn quản trị**: Tự động chỉ ra cấu phần làm xói mòn điểm số mạnh nhất và đề xuất giải pháp cơ cấu nợ, bảo toàn thanh khoản.
-5. **Chẩn đoán & Nhận định Tài chính Tự Động**:
+6. **Chẩn đoán & Nhận định Tài chính Tự Động**:
    - Tự động nhận diện rủi ro: Vốn lưu động ròng âm ($X_1 < 0$), gánh nặng đòn bẩy nợ vay quá lớn ($X_4$ thấp), biên EBIT suy thoái ($X_3 < 0$),...
    - Đưa ra nhận xét xu hướng và khuyến nghị quản trị dòng tiền.
-6. **Dữ liệu mẫu (Preset Demo)**:
+7. **Dữ liệu mẫu (Preset Demo)**:
    - Tải nhanh dữ liệu mẫu Doanh nghiệp Tăng trưởng An toàn, Doanh nghiệp Vùng xám và Doanh nghiệp Nguy cơ phá sản cao chỉ bằng 1 cú nhấp chuột.
 
 ---
@@ -95,11 +100,15 @@ vercel
 ## 📂 Cấu Trúc Thư Mục
 ```text
 CalcZScore/
-├── index.html         # Giao diện và logic phân tích chính
-├── calc_zscore.html   # File điều hướng tương thích
-├── vercel.json        # Cấu hình deployment Vercel
-├── .gitignore         # File bỏ qua cho git
-└── README.md          # Tài liệu hướng dẫn
+├── api/
+│   └── stock.js           # Vercel Serverless Function trích xuất BCTC từ sàn
+├── stock_directory.js     # Danh bạ 150+ doanh nghiệp niêm yết & cache BCTC
+├── index.html             # Giao diện chính & bảng tính toán Z-Score
+├── calc_zscore.html       # File điều hướng tương thích
+├── package.json           # Cấu hình dự án & dependencies (cheerio)
+├── vercel.json            # Cấu hình deployment Vercel
+├── .gitignore             # File bỏ qua cho git
+└── README.md              # Tài liệu hướng dẫn
 ```
 
 ---

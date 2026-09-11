@@ -15,6 +15,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Stock Directory & Preloaded Financials -->
+  <script src="stock_directory.js"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -126,6 +128,145 @@
 
   <!-- MAIN CONTAINER -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-grow space-y-6">
+
+    <!-- STOCK MARKET REALTIME CONNECTOR & SEARCH -->
+    <section class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 sm:p-6 text-white shadow-xl border border-indigo-500/20 relative overflow-hidden">
+      <!-- Decorative background glow -->
+      <div class="absolute -right-20 -top-20 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -left-20 -bottom-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="relative z-10">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+          <div>
+            <div class="flex items-center gap-2 mb-1.5">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                SÀN CHỨNG KHOÁN VIỆT NAM (REALTIME)
+              </span>
+              <span class="text-[11px] font-medium text-slate-400">HOSE • HNX • UPCOM</span>
+            </div>
+            <h2 class="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+              <i data-lucide="building-2" class="w-5 h-5 text-indigo-400"></i>
+              Tra Cứu & Tự Động Nạp Báo Cáo Tài Chính Doanh Nghiệp
+            </h2>
+            <p class="text-xs text-slate-300 mt-1 max-w-2xl">
+              Nhập mã cổ phiếu hoặc tên công ty để hệ thống tự động bóc tách đủ 9 chỉ tiêu BCTC qua các năm gần nhất và tính toán điểm số Altman Z-Score tức thì.
+            </p>
+          </div>
+
+          <!-- Active company info badge (shown when a stock is loaded) -->
+          <div id="active-company-badge" class="hidden flex-shrink-0 bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-base text-white shadow" id="badge-symbol">
+              HPG
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-white max-w-[200px] truncate" id="badge-company-name">Hòa Phát</span>
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/40 text-indigo-200 border border-indigo-400/30" id="badge-exchange">HOSE</span>
+              </div>
+              <p class="text-[11px] text-emerald-300 font-medium flex items-center gap-1 mt-0.5">
+                <i data-lucide="check-circle" class="w-3 h-3 text-emerald-400"></i>
+                <span id="badge-status">Đã nạp 9 chỉ tiêu BCTC</span>
+              </p>
+            </div>
+            <button onclick="clearActiveCompany()" class="text-slate-400 hover:text-white p-1 rounded transition ml-1" title="Hủy liên kết công ty">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- SEARCH INPUT & AUTOCOMPLETE CONTAINER -->
+        <div class="relative mt-2">
+          <div class="flex flex-col sm:flex-row gap-2.5">
+            <div class="relative flex-grow">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <i data-lucide="search" class="w-5 h-5"></i>
+              </div>
+              <input 
+                type="text" 
+                id="stock-search-input" 
+                placeholder="Nhập mã cổ phiếu hoặc tên công ty (VD: HPG, VNM, FPT, MWG, Hòa Phát, Vinamilk...)" 
+                autocomplete="off"
+                class="w-full pl-11 pr-10 py-3 bg-slate-800/90 border border-slate-700/80 rounded-xl text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-inner"
+              >
+              <button 
+                id="clear-search-btn" 
+                onclick="clearSearchInput()" 
+                class="hidden absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-white transition"
+                type="button"
+              >
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+
+              <!-- AUTOCOMPLETE DROPDOWN -->
+              <div 
+                id="stock-autocomplete-dropdown" 
+                class="hidden absolute left-0 right-0 top-full mt-1.5 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-slate-800/80 max-h-72 overflow-y-auto"
+              >
+                <!-- Dynamically populated suggestions -->
+              </div>
+            </div>
+
+            <button 
+              id="btn-fetch-stock" 
+              onclick="handleStockSearchSubmit()" 
+              class="px-5 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-sm rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              type="button"
+            >
+              <i data-lucide="download-cloud" class="w-4 h-4" id="btn-fetch-icon"></i>
+              <span id="btn-fetch-text">Tra Cứu BCTC</span>
+            </button>
+          </div>
+
+          <!-- POPULAR QUICK TICKERS -->
+          <div class="flex flex-wrap items-center gap-1.5 mt-3 text-xs">
+            <span class="text-slate-400 font-medium mr-1 flex items-center gap-1">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
+              Gợi ý nhanh:
+            </span>
+            <button type="button" onclick="loadCompanyStock('HPG')" class="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-indigo-900/60 text-slate-200 border border-slate-700 transition font-semibold flex items-center gap-1">
+              <span class="text-indigo-400">HPG</span> <span class="text-[10px] text-slate-400 font-normal">Hòa Phát</span>
+            </button>
+            <button type="button" onclick="loadCompanyStock('VNM')" class="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-indigo-900/60 text-slate-200 border border-slate-700 transition font-semibold flex items-center gap-1">
+              <span class="text-indigo-400">VNM</span> <span class="text-[10px] text-slate-400 font-normal">Vinamilk</span>
+            </button>
+            <button type="button" onclick="loadCompanyStock('FPT')" class="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-indigo-900/60 text-slate-200 border border-slate-700 transition font-semibold flex items-center gap-1">
+              <span class="text-indigo-400">FPT</span> <span class="text-[10px] text-slate-400 font-normal">Công nghệ</span>
+            </button>
+            <button type="button" onclick="loadCompanyStock('MWG')" class="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-indigo-900/60 text-slate-200 border border-slate-700 transition font-semibold flex items-center gap-1">
+              <span class="text-indigo-400">MWG</span> <span class="text-[10px] text-slate-400 font-normal">Thế Giới Di Động</span>
+            </button>
+            <button type="button" onclick="loadCompanyStock('DGC')" class="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-indigo-900/60 text-slate-200 border border-slate-700 transition font-semibold flex items-center gap-1">
+              <span class="text-indigo-400">DGC</span> <span class="text-[10px] text-slate-400 font-normal">Hóa chất</span>
+            </button>
+            <button type="button" onclick="loadCompanyStock('MSN')" class="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-indigo-900/60 text-slate-200 border border-slate-700 transition font-semibold flex items-center gap-1">
+              <span class="text-indigo-400">MSN</span> <span class="text-[10px] text-slate-400 font-normal">Masan</span>
+            </button>
+            <button type="button" onclick="loadCompanyStock('VHM')" class="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-indigo-900/60 text-slate-200 border border-slate-700 transition font-semibold flex items-center gap-1">
+              <span class="text-indigo-400">VHM</span> <span class="text-[10px] text-slate-400 font-normal">Vinhomes</span>
+            </button>
+            <button type="button" onclick="loadCompanyStock('PNJ')" class="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-indigo-900/60 text-slate-200 border border-slate-700 transition font-semibold flex items-center gap-1">
+              <span class="text-indigo-400">PNJ</span> <span class="text-[10px] text-slate-400 font-normal">Vàng bạc</span>
+            </button>
+            <button type="button" onclick="loadCompanyStock('DBC')" class="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-indigo-900/60 text-slate-200 border border-slate-700 transition font-semibold flex items-center gap-1">
+              <span class="text-indigo-400">DBC</span> <span class="text-[10px] text-slate-400 font-normal">Dabaco</span>
+            </button>
+            <button type="button" onclick="loadCompanyStock('VCG')" class="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-indigo-900/60 text-slate-200 border border-slate-700 transition font-semibold flex items-center gap-1">
+              <span class="text-indigo-400">VCG</span> <span class="text-[10px] text-slate-400 font-normal">Vinaconex</span>
+            </button>
+          </div>
+
+          <!-- LOADING & FEEDBACK NOTIFICATION BAR -->
+          <div id="stock-feedback-bar" class="hidden mt-3 p-3 rounded-xl text-xs flex items-center justify-between gap-3 transition">
+            <div class="flex items-center gap-2.5">
+              <span id="stock-feedback-icon"></span>
+              <span id="stock-feedback-msg" class="font-medium"></span>
+            </div>
+            <button onclick="hideStockFeedback()" type="button" class="text-slate-400 hover:text-white text-xs">✕</button>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- CONTROL PANEL & MODEL SELECTOR -->
     <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
@@ -785,6 +926,7 @@
     let unitMultiplier = 1; // 1: billion, 0.001, etc.
     let zscoreChartInstance = null;
     let componentsChartInstance = null;
+    let activeCompany = null; // { symbol, name, exchange }
 
     // What-If Scenario Simulation Configuration
     let simConfig = {
@@ -929,6 +1071,8 @@
       renderMatrixBody();
       updateModelCardStyles();
       calculateAll();
+      initStockSearchUI();
+      updateActiveCompanyBadge();
       lucide.createIcons();
     });
 
@@ -2027,6 +2171,9 @@
       currentModel = preset.model;
       years = [...preset.years];
       currentData = JSON.parse(JSON.stringify(preset.data));
+      activeCompany = null;
+      updateActiveCompanyBadge();
+      hideStockFeedback();
 
       updateYearInputs();
       updateYearBadge();
@@ -2045,6 +2192,9 @@
         currentData = {
           tsnh: {}, nnh: {}, tts: {}, lncpp: {}, lntt: {}, cplv: {}, vhtt: {}, tnpt: {}, dtt: {}
         };
+        activeCompany = null;
+        updateActiveCompanyBadge();
+        hideStockFeedback();
         renderMatrixBody();
         calculateAll();
         saveState();
@@ -2060,7 +2210,8 @@
           currentModel,
           years,
           currentData,
-          simConfig
+          simConfig,
+          activeCompany
         };
         localStorage.setItem('altman_zscore_state', JSON.stringify(state));
       } catch (e) {
@@ -2085,10 +2236,370 @@
           if (parsed.simConfig) {
             simConfig = { ...simConfig, ...parsed.simConfig };
           }
+          if (parsed.activeCompany) {
+            activeCompany = parsed.activeCompany;
+          }
         }
       } catch (e) {
         console.warn('LocalStorage load failed, using defaults:', e);
       }
+    }
+
+    // ==========================================
+    // STOCK MARKET CONNECTOR & SEARCH LOGIC
+    // ==========================================
+    let activeStockItem = -1;
+    let currentSuggestions = [];
+
+    function initStockSearchUI() {
+      const input = document.getElementById('stock-search-input');
+      const dropdown = document.getElementById('stock-autocomplete-dropdown');
+      if (!input || !dropdown) return;
+
+      input.addEventListener('input', (e) => {
+        onStockSearchInput(e.target.value);
+      });
+
+      input.addEventListener('focus', () => {
+        if (input.value.trim().length > 0) {
+          onStockSearchInput(input.value);
+        }
+      });
+
+      input.addEventListener('keydown', (e) => {
+        const items = dropdown.querySelectorAll('.stock-suggestion-item');
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (items.length === 0) return;
+          activeStockItem = (activeStockItem + 1) % items.length;
+          highlightSuggestion(items);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (items.length === 0) return;
+          activeStockItem = (activeStockItem - 1 + items.length) % items.length;
+          highlightSuggestion(items);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (activeStockItem >= 0 && items[activeStockItem]) {
+            items[activeStockItem].click();
+          } else {
+            handleStockSearchSubmit();
+          }
+        } else if (e.key === 'Escape') {
+          dropdown.classList.add('hidden');
+        }
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#stock-search-input') && !e.target.closest('#stock-autocomplete-dropdown')) {
+          dropdown.classList.add('hidden');
+        }
+      });
+    }
+
+    function highlightSuggestion(items) {
+      items.forEach((it, idx) => {
+        if (idx === activeStockItem) {
+          it.classList.add('bg-indigo-600/30', 'border-l-4', 'border-indigo-400');
+          it.scrollIntoView({ block: 'nearest' });
+        } else {
+          it.classList.remove('bg-indigo-600/30', 'border-l-4', 'border-indigo-400');
+        }
+      });
+    }
+
+    function onStockSearchInput(val) {
+      const dropdown = document.getElementById('stock-autocomplete-dropdown');
+      const clearBtn = document.getElementById('clear-search-btn');
+      if (!dropdown) return;
+
+      const trimmed = val.trim();
+      if (clearBtn) {
+        if (trimmed.length > 0) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
+      }
+
+      if (trimmed.length === 0) {
+        dropdown.classList.add('hidden');
+        dropdown.innerHTML = '';
+        currentSuggestions = [];
+        activeStockItem = -1;
+        return;
+      }
+
+      // Search directory
+      if (typeof searchStockDirectory === 'function') {
+        currentSuggestions = searchStockDirectory(trimmed);
+      } else {
+        currentSuggestions = [];
+      }
+
+      activeStockItem = -1;
+      renderStockSuggestions(currentSuggestions, trimmed);
+    }
+
+    function renderStockSuggestions(list, query) {
+      const dropdown = document.getElementById('stock-autocomplete-dropdown');
+      if (!dropdown) return;
+
+      if (list.length === 0) {
+        const isTickerFormat = /^[A-Za-z0-9]{3,8}$/.test(query.trim());
+        if (isTickerFormat) {
+          const sym = query.trim().toUpperCase();
+          dropdown.innerHTML = `
+            <div class="p-3 text-xs text-slate-300 hover:bg-slate-800 cursor-pointer flex items-center justify-between stock-suggestion-item" onclick="loadCompanyStock('${sym}')">
+              <div class="flex items-center gap-2">
+                <span class="font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono">${sym}</span>
+                <span>Tìm kiếm trực tiếp BCTC mã <strong class="text-white">${sym}</strong> trên sàn...</span>
+              </div>
+              <i data-lucide="arrow-right" class="w-4 h-4 text-indigo-400"></i>
+            </div>
+          `;
+          dropdown.classList.remove('hidden');
+          if (window.lucide) lucide.createIcons();
+          return;
+        } else {
+          dropdown.innerHTML = `
+            <div class="p-3 text-xs text-slate-400 text-center italic">
+              Không tìm thấy công ty phù hợp. Bạn có thể nhập trực tiếp mã cổ phiếu 3 ký tự (VD: HPG, VNM, FPT...).
+            </div>
+          `;
+          dropdown.classList.remove('hidden');
+          return;
+        }
+      }
+
+      let html = '';
+      list.forEach((item, idx) => {
+        const exchangeColor = item.e === 'HOSE' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 
+                              item.e === 'HNX' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 
+                              'bg-purple-500/20 text-purple-300 border-purple-500/30';
+        html += `
+          <div 
+            class="p-3 text-xs hover:bg-slate-800/90 cursor-pointer transition flex items-center justify-between gap-3 stock-suggestion-item"
+            onclick="selectStockSuggestion('${item.s}', '${item.n.replace(/'/g, "\\'")}')"
+            data-index="${idx}"
+          >
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="font-extrabold px-2 py-1 rounded-md bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 font-mono text-sm tracking-wide flex-shrink-0">
+                ${item.s}
+              </span>
+              <div class="min-w-0">
+                <div class="font-bold text-slate-100 truncate">${item.n}</div>
+                <div class="text-[11px] text-slate-400 truncate">${item.ind || 'Doanh nghiệp niêm yết'}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded border ${exchangeColor}">
+                ${item.e}
+              </span>
+            </div>
+          </div>
+        `;
+      });
+
+      dropdown.innerHTML = html;
+      dropdown.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function selectStockSuggestion(symbol, name) {
+      const input = document.getElementById('stock-search-input');
+      const dropdown = document.getElementById('stock-autocomplete-dropdown');
+      if (input) input.value = `${symbol} - ${name}`;
+      if (dropdown) dropdown.classList.add('hidden');
+      loadCompanyStock(symbol, name);
+    }
+
+    function clearSearchInput() {
+      const input = document.getElementById('stock-search-input');
+      const dropdown = document.getElementById('stock-autocomplete-dropdown');
+      const clearBtn = document.getElementById('clear-search-btn');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+      if (dropdown) dropdown.classList.add('hidden');
+      if (clearBtn) clearBtn.classList.add('hidden');
+    }
+
+    function handleStockSearchSubmit() {
+      const input = document.getElementById('stock-search-input');
+      const dropdown = document.getElementById('stock-autocomplete-dropdown');
+      if (!input) return;
+      const raw = input.value.trim();
+      if (!raw) {
+        showStockFeedback('warning', 'Vui lòng nhập mã cổ phiếu hoặc tên doanh nghiệp cần tra cứu!');
+        return;
+      }
+
+      if (dropdown) dropdown.classList.add('hidden');
+
+      const tickerMatch = raw.match(/^[A-Za-z0-9]{3,8}/);
+      if (tickerMatch) {
+        loadCompanyStock(tickerMatch[0].toUpperCase());
+        return;
+      }
+
+      if (typeof searchStockDirectory === 'function') {
+        const matches = searchStockDirectory(raw);
+        if (matches.length > 0) {
+          loadCompanyStock(matches[0].s, matches[0].n);
+          return;
+        }
+      }
+
+      showStockFeedback('error', `Không tìm thấy mã hoặc công ty phù hợp với "${raw}". Vui lòng thử lại với mã 3 ký tự (VD: HPG, VNM, FPT...).`);
+    }
+
+    async function loadCompanyStock(symbol, optionalName = '') {
+      if (!symbol) return;
+      const ticker = symbol.trim().toUpperCase();
+
+      const btn = document.getElementById('btn-fetch-stock');
+      const btnIcon = document.getElementById('btn-fetch-icon');
+      const btnText = document.getElementById('btn-fetch-text');
+      if (btn) btn.disabled = true;
+      if (btnText) btnText.innerText = 'Đang tải...';
+      if (btnIcon) btnIcon.setAttribute('data-lucide', 'loader-2');
+      if (window.lucide) lucide.createIcons();
+
+      showStockFeedback('loading', `Đang kết nối sàn chứng khoán & trích xuất BCTC mã ${ticker}...`);
+
+      try {
+        let stockResult = null;
+
+        // 1. First try API fetch
+        try {
+          const res = await fetch(`/api/stock?symbol=${encodeURIComponent(ticker)}`);
+          if (res.ok) {
+            stockResult = await res.json();
+          } else if (res.status === 422) {
+            const errData = await res.json();
+            showStockFeedback('warning', errData.error || 'Doanh nghiệp thuộc nhóm ngành đặc thù không áp dụng mô hình Z-Score.');
+            resetButtonState();
+            return;
+          } else {
+            console.warn(`API responded with status ${res.status}`);
+          }
+        } catch (fetchErr) {
+          console.warn('Direct /api/stock fetch failed, checking offline preloaded cache:', fetchErr);
+        }
+
+        // 2. Fallback to PRELOADED_STOCKS if API is not running locally (e.g. file:// or static server)
+        if (!stockResult && typeof PRELOADED_STOCKS !== 'undefined' && PRELOADED_STOCKS[ticker]) {
+          stockResult = PRELOADED_STOCKS[ticker];
+          console.info(`Loaded ${ticker} from preloaded verified cache.`);
+        }
+
+        if (!stockResult || !stockResult.success) {
+          throw new Error(`Không thể lấy dữ liệu BCTC cho mã ${ticker}. Hãy kiểm tra kết nối mạng hoặc thử lại với mã khác.`);
+        }
+
+        // 3. Apply extracted data to system
+        years = [...stockResult.years];
+        currentData = JSON.parse(JSON.stringify(stockResult.data));
+        activeCompany = {
+          symbol: stockResult.symbol,
+          name: stockResult.companyName || optionalName || ticker,
+          exchange: stockResult.exchange || 'HOSE'
+        };
+
+        // Update UI
+        updateYearInputs();
+        updateYearBadge();
+        initSimUI();
+        renderMatrixHeaders();
+        renderMatrixBody();
+        calculateAll();
+        updateActiveCompanyBadge();
+        saveState();
+
+        if (window.lucide) lucide.createIcons();
+
+        showStockFeedback('success', `Đã đồng bộ thành công 9 chỉ tiêu BCTC cho ${activeCompany.name} (${activeCompany.symbol}) giai đoạn ${years[0]} - ${years[years.length - 1]}!`);
+
+      } catch (err) {
+        console.error('Error in loadCompanyStock:', err);
+        showStockFeedback('error', err.message || `Đã có lỗi xảy ra khi tải số liệu mã ${ticker}.`);
+      } finally {
+        resetButtonState();
+      }
+    }
+
+    function resetButtonState() {
+      const btn = document.getElementById('btn-fetch-stock');
+      const btnIcon = document.getElementById('btn-fetch-icon');
+      const btnText = document.getElementById('btn-fetch-text');
+      if (btn) btn.disabled = false;
+      if (btnText) btnText.innerText = 'Tra Cứu BCTC';
+      if (btnIcon) btnIcon.setAttribute('data-lucide', 'download-cloud');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function showStockFeedback(type, message) {
+      const bar = document.getElementById('stock-feedback-bar');
+      const icon = document.getElementById('stock-feedback-icon');
+      const msg = document.getElementById('stock-feedback-msg');
+      if (!bar || !icon || !msg) return;
+
+      bar.className = 'mt-3 p-3 rounded-xl text-xs flex items-center justify-between gap-3 transition border';
+
+      if (type === 'loading') {
+        bar.classList.add('bg-indigo-950/80', 'text-indigo-200', 'border-indigo-500/40');
+        icon.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-indigo-400"></i>';
+      } else if (type === 'success') {
+        bar.classList.add('bg-emerald-950/80', 'text-emerald-200', 'border-emerald-500/40');
+        icon.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>';
+      } else if (type === 'warning') {
+        bar.classList.add('bg-amber-950/80', 'text-amber-200', 'border-amber-500/40');
+        icon.innerHTML = '<i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>';
+      } else { // error
+        bar.classList.add('bg-rose-950/80', 'text-rose-200', 'border-rose-500/40');
+        icon.innerHTML = '<i data-lucide="alert-circle" class="w-4 h-4 text-rose-400"></i>';
+      }
+
+      msg.innerText = message;
+      bar.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function hideStockFeedback() {
+      const bar = document.getElementById('stock-feedback-bar');
+      if (bar) bar.classList.add('hidden');
+    }
+
+    function updateActiveCompanyBadge() {
+      const badge = document.getElementById('active-company-badge');
+      if (!badge) return;
+
+      if (!activeCompany) {
+        badge.classList.add('hidden');
+        return;
+      }
+
+      const symEl = document.getElementById('badge-symbol');
+      const nameEl = document.getElementById('badge-company-name');
+      const exEl = document.getElementById('badge-exchange');
+      const statusEl = document.getElementById('badge-status');
+
+      if (symEl) symEl.innerText = activeCompany.symbol;
+      if (nameEl) nameEl.innerText = activeCompany.name;
+      if (exEl) exEl.innerText = activeCompany.exchange;
+      if (statusEl && years.length > 0) {
+        statusEl.innerText = `BCTC ${years[0]} - ${years[years.length - 1]} (${years.length} năm)`;
+      }
+
+      badge.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function clearActiveCompany() {
+      activeCompany = null;
+      updateActiveCompanyBadge();
+      hideStockFeedback();
+      saveState();
     }
   </script>
 </body>
