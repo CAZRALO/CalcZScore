@@ -35,11 +35,20 @@ Hệ thống phân tích và dự báo nguy cơ kiệt quệ tài chính / phá 
      - *Tăng trưởng bứt phá*: Doanh thu $+25\%$, Lãi vay $-10\%$, LNTT $+35\%$.
    - **Chiếu trực tiếp quỹ đạo lên biểu đồ**: Biểu đồ chính tự động nối thêm cột dự phóng kèm đường xu thế nét đứt, cho thấy tức thì điểm số Z-Score sẽ trượt xuống vùng rủi ro nào.
    - **Bóc tách độ nhạy thành phần ($X_1 - X_5$) & Tư vấn quản trị**: Tự động chỉ ra cấu phần làm xói mòn điểm số mạnh nhất và đề xuất giải pháp cơ cấu nợ, bảo toàn thanh khoản.
-6. **Chẩn đoán & Nhận định Tài chính Tự Động**:
+6. **Nhập Số Liệu Năm Thứ 6 & Đánh Giá Mức Độ Khả Quan Tài Chính**:
+   - **Cột riêng Năm thứ 6 (2026 / Kế hoạch)**: Nằm ngay trên bảng ma trận BCTC, cho phép người dùng tự do nhập 9 chỉ tiêu tài chính để kiểm tra tính khả quan của năm thứ 6.
+   - **Khối Đánh Giá Chuyên Sâu**: Trả lời trực diện câu hỏi *"Tình hình Năm thứ 6 có khả quan không?"* với các trạng thái rõ ràng:
+     - 🟢 **RẤT KHẢ QUAN**: $Z \ge 2.99$ / $2.90$ (Sức khỏe tài chính an toàn & vững mạnh).
+     - 🟡 **VÙNG XÁM - CẦN THẬN TRỌNG**: $1.81 \le Z < 2.99$ (Mức độ trung bình, tiềm ẩn rủi ro nếu thị trường đảo chiều).
+     - 🔴 **KHÔNG KHẢ QUAN**: $Z < 1.81$ (Báo động đỏ nguy cơ kiệt quệ tài chính).
+   - **So sánh trực tiếp với Năm thứ 5**: Đo lường mức độ biến thiên điểm số Z-Score, tăng hay giảm bao nhiêu điểm.
+   - **Bóc tách 5 thành tố $X_1 - X_5$**: Phân tích chi tiết thanh khoản ngắn hạn, tích lũy vốn tự có, hiệu quả sinh lời EBIT, đòn bẩy nợ và vòng quay tài sản.
+   - **Bộ công cụ tiện ích**: Phím tắt *Chép từ Năm 5*, *Mẫu: Khả quan (+15%)*, *Mẫu: Khó khăn (-20%)*, *Xóa Năm 6*, cùng Form nhập nhanh 9 chỉ tiêu đồng bộ 2 chiều thời gian thực.
+7. **Chẩn đoán & Nhận định Tài chính Tự Động**:
    - Tự động nhận diện rủi ro: Vốn lưu động ròng âm ($X_1 < 0$), gánh nặng đòn bẩy nợ vay quá lớn ($X_4$ thấp), biên EBIT suy thoái ($X_3 < 0$),...
    - Đưa ra nhận xét xu hướng và khuyến nghị quản trị dòng tiền.
-7. **Dữ liệu mẫu (Preset Demo)**:
-   - Tải nhanh dữ liệu mẫu Doanh nghiệp Tăng trưởng An toàn, Doanh nghiệp Vùng xám và Doanh nghiệp Nguy cơ phá sản cao chỉ bằng 1 cú nhấp chuột.
+8. **Dữ liệu mẫu (Preset Demo)**:
+   - Tải nhanh dữ liệu mẫu Doanh nghiệp Tăng trưởng An toàn, Doanh nghiệp Vùng xám và Doanh nghiệp Nguy cơ phá sản cao chỉ bằng 1 cú nhấp chuột (cả 3 bộ mẫu đều sẵn sàng số liệu cho 6 năm liên tiếp).
 
 ---
 

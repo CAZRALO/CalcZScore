@@ -1,5 +1,13 @@
 const cheerio = require('cheerio');
 
+let STOCK_DIRECTORY = [];
+try {
+  const stockDirModule = require('../stock_directory.js');
+  STOCK_DIRECTORY = stockDirModule.STOCK_DIRECTORY || [];
+} catch (e) {
+  // Directory might not exist or be imported differently
+}
+
 module.exports = async (req, res) => {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -31,50 +39,81 @@ module.exports = async (req, res) => {
   };
 
   try {
-    // 1. Fetch data in parallel
     const currentYear = new Date().getFullYear();
-    const baseYear = currentYear - 1; // Default to last complete fiscal year (e.g. 2024/2025)
+    let baseYear = currentYear - 1; // Default to last complete fiscal year
 
-    const [bsRes, incRes, ssiRes] = await Promise.allSettled([
-      fetch(`https://s.cafef.vn/bao-cao-tai-chinh/${ticker}/bsheet/${baseYear}/0/0/0/bao-cao.chn`, { headers }),
-      fetch(`https://s.cafef.vn/bao-cao-tai-chinh/${ticker}/incsta/${baseYear}/0/0/0/bao-cao.chn`, { headers }),
-      fetch(`https://iboard-query.ssi.com.vn/stock/${ticker}`, { headers: { 'User-Agent': headers['User-Agent'] } })
-    ]);
+    // Check pre-registered directory entry
+    const dirEntry = STOCK_DIRECTORY.find(item => item.s && item.s.toUpperCase() === ticker);
 
-    if (bsRes.status !== 'fulfilled' || !bsRes.value.ok) {
-      return res.status(502).json({ error: `Không thể kết nối đến cổng dữ liệu tài chính cho mã ${ticker}.` });
+    // Helper to fetch CafeF + SSI in parallel
+    async function fetchCafeFData(yr) {
+      const [bsRes, incRes, ssiRes] = await Promise.allSettled([
+        fetch(`https://s.cafef.vn/bao-cao-tai-chinh/${ticker}/bsheet/${yr}/0/0/0/bao-cao.chn`, { headers }),
+        fetch(`https://s.cafef.vn/bao-cao-tai-chinh/${ticker}/incsta/${yr}/0/0/0/bao-cao.chn`, { headers }),
+        fetch(`https://iboard-query.ssi.com.vn/stock/${ticker}`, { headers: { 'User-Agent': headers['User-Agent'] } })
+      ]);
+
+      const bsHtml = (bsRes.status === 'fulfilled' && bsRes.value.ok) ? await bsRes.value.text() : '';
+      const incHtml = (incRes.status === 'fulfilled' && incRes.value.ok) ? await incRes.value.text() : '';
+      
+      let ssiData = null;
+      if (ssiRes.status === 'fulfilled' && ssiRes.value.ok) {
+        try {
+          ssiData = await ssiRes.value.json();
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      return { bsHtml, incHtml, ssiData };
     }
 
-    const bsHtml = await bsRes.value.text();
-    const incHtml = (incRes.status === 'fulfilled' && incRes.value.ok) ? await incRes.value.text() : '';
-    
+    let { bsHtml, incHtml, ssiData } = await fetchCafeFData(baseYear);
+
     // Parse SSI info for company name and exchange
-    let companyName = ticker;
-    let exchange = 'HOSE/HNX';
+    let companyName = (dirEntry && dirEntry.n) || ticker;
+    let exchange = (dirEntry && dirEntry.e) || 'HOSE';
     let currentPrice = 0;
-    if (ssiRes.status === 'fulfilled' && ssiRes.value.ok) {
-      try {
-        const ssiData = await ssiRes.value.json();
-        if (ssiData?.data) {
-          companyName = ssiData.data.companyNameVi || ssiData.data.companyNameEn || ticker;
-          exchange = (ssiData.data.exchange || 'HOSE').toUpperCase();
-          currentPrice = ssiData.data.refPrice || ssiData.data.priorClosePrice || 0;
-        }
-      } catch (e) {
-        // Ignore JSON parse error from SSI
+
+    if (ssiData?.data) {
+      companyName = ssiData.data.companyNameVi || ssiData.data.companyNameEn || companyName;
+      if (ssiData.data.exchange) {
+        exchange = ssiData.data.exchange.toUpperCase();
+      } else if (ssiData.data.market === 'UPX') {
+        exchange = 'UPCOM';
+      }
+      currentPrice = ssiData.data.refPrice || ssiData.data.priorClosePrice || 0;
+    }
+
+    let isUnlisted = exchange.includes('UPCOM') || 
+                       exchange.includes('OTC') || 
+                       exchange.includes('CHƯA NIÊM YẾT') ||
+                       (dirEntry && dirEntry.e === 'UPCOM');
+
+    if (isUnlisted) {
+      exchange = 'UPCOM';
+    }
+
+    let $bs = cheerio.load(bsHtml);
+    let $inc = cheerio.load(incHtml);
+
+    // Fallback company name from HTML title if missing
+    if (companyName === ticker) {
+      const pageTitle = $bs('title').text();
+      const match = pageTitle.match(/^(.*?)(?:\s*-\s*Báo cáo tài chính|\s*-\s*CafeF)/i);
+      if (match && match[1].trim()) {
+        companyName = match[1].trim();
       }
     }
 
-    const $bs = cheerio.load(bsHtml);
-    const $inc = cheerio.load(incHtml);
-
-    // 2. Detect years from table header
+    // Detect years from table header
     function parseYears($) {
       let detected = [];
       $('tr').each((_, row) => {
         const texts = $(row).find('td, th').map((_, el) => $(el).text().trim()).get();
+        // Match 4-digit years between 2000 and currentYear
         const yearCandidates = texts.filter(t => /^\d{4}$/.test(t) && parseInt(t, 10) >= 2000 && parseInt(t, 10) <= currentYear);
-        if (yearCandidates.length >= 3) {
+        if (yearCandidates.length >= 2) {
           detected = yearCandidates;
           return false; // Break
         }
@@ -87,20 +126,39 @@ module.exports = async (req, res) => {
       years = parseYears($inc);
     }
 
+    // If baseYear didn't have data, try baseYear - 1 (in case latest year not yet submitted)
+    if (years.length === 0 && baseYear > 2020) {
+      baseYear = baseYear - 1;
+      const retry = await fetchCafeFData(baseYear);
+      if (retry.bsHtml) {
+        bsHtml = retry.bsHtml;
+        incHtml = retry.incHtml || incHtml;
+        $bs = cheerio.load(bsHtml);
+        $inc = cheerio.load(incHtml);
+        years = parseYears($bs);
+        if (years.length === 0) years = parseYears($inc);
+      }
+    }
+
     if (years.length === 0) {
       return res.status(404).json({
-        error: `Không tìm thấy Báo cáo tài chính cho mã ${ticker}. Vui lòng kiểm tra lại mã hoặc doanh nghiệp chưa công bố BCTC theo năm.`
+        error: `Không tìm thấy Báo cáo tài chính cho mã ${ticker}. Doanh nghiệp có thể chưa nộp BCTC theo năm hoặc mã chưa đúng.`
       });
     }
 
-    // Sort years ascending: e.g. [2021, 2022, 2023, 2024]
+    // Sort years ascending: e.g. [2022, 2023, 2024, 2025]
     years.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
 
     function cleanVal(str) {
       if (!str) return 0;
-      // Format 94.154.859.648.304 -> 94154859648304
-      const num = parseFloat(str.replace(/\./g, '').replace(',', '.'));
-      return isNaN(num) ? 0 : Math.round(num / 1e9); // Return in Billions VND
+      let s = str.trim();
+      // Handle negative numbers: e.g. -3.970.123 or (3.970.123)
+      const isNegative = s.startsWith('-') || (s.startsWith('(') && s.endsWith(')'));
+      s = s.replace(/[^\d.,]/g, '');
+      const num = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+      if (isNaN(num)) return 0;
+      const valInBillions = Math.round(num / 1e9);
+      return isNegative ? -Math.abs(valInBillions) : valInBillions;
     }
 
     function extractMetric($, matchCriteria) {
@@ -112,7 +170,6 @@ module.exports = async (req, res) => {
           const isMatch = matchCriteria(rowTitle);
           if (isMatch) {
             years.forEach((yr, idx) => {
-              // The cells in CafeF are after row title: cells[1], cells[2], ...
               result[yr] = cleanVal(cells[idx + 1]);
             });
             return false;
@@ -122,7 +179,7 @@ module.exports = async (req, res) => {
       return result;
     }
 
-    // 3. Extract Balance Sheet Metrics
+    // Extract Balance Sheet Metrics
     const tsnh = extractMetric($bs, name => name.includes('TÀI SẢN NGẮN HẠN') && (name.includes('A-') || name.includes('A.') || name.includes('A -')));
     const tts  = extractMetric($bs, name => name.includes('TỔNG CỘNG TÀI SẢN') || (name.includes('TỔNG TÀI SẢN') && !name.includes('DÀI HẠN')));
     const nnh  = extractMetric($bs, name => name.includes('NỢ NGẮN HẠN') && (name.includes('I.') || name.includes('I -') || name.includes('I-')));
@@ -130,13 +187,12 @@ module.exports = async (req, res) => {
     const vcsh = extractMetric($bs, name => name.includes('VỐN CHỦ SỞ HỮU') && (name.includes('D.') || name.includes('D -') || name.includes('D-') || name.includes('D - VỐN')));
     const lncpp = extractMetric($bs, name => name.includes('CHƯA PHÂN PHỐI') || name.includes('LỢI NHUẬN SAU THUẾ CHƯA PHÂN PHỐI'));
 
-    // 4. Extract Income Statement Metrics
+    // Extract Income Statement Metrics
     const dtt  = extractMetric($inc, name => name.includes('DOANH THU THUẦN VỀ BÁN HÀNG') || name.includes('DOANH THU THUẦN'));
     const lntt = extractMetric($inc, name => name.includes('TỔNG LỢI NHUẬN KẾ TOÁN TRƯỚC THUẾ') || name.includes('LỢI NHUẬN TRƯỚC THUẾ'));
     const cplv = extractMetric($inc, name => name.includes('CHI PHÍ LÃI VAY'));
 
-    // 5. Special check for Banks & Financial Institutions
-    // Banks have no Current Assets (TSNH) or use specialized banking balance sheet items
+    // Special check for Banks & Financial Institutions
     const hasTSNH = Object.values(tsnh).some(v => v > 0);
     const hasTTS = Object.values(tts).some(v => v > 0);
 
@@ -149,7 +205,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 6. Balance Sheet Fallbacks & Consistencies
+    // Balance Sheet Fallbacks & Consistencies
     years.forEach(yr => {
       // If TNPT is missing or 0, TNPT = TTS - VCSH
       if (!tnpt[yr] && tts[yr] && vcsh[yr]) {
@@ -159,13 +215,11 @@ module.exports = async (req, res) => {
       if (!vcsh[yr] && tts[yr] && tnpt[yr]) {
         vcsh[yr] = Math.max(0, tts[yr] - tnpt[yr]);
       }
-      // Fallback for LNCPP: if missing, keep 0
       if (!lncpp[yr]) lncpp[yr] = 0;
-      // Fallback for CPLV: if missing, keep 0
       if (!cplv[yr]) cplv[yr] = 0;
     });
 
-    // Market cap proxy: use VCSH (Book Value) or scale if current price available
+    // Market cap proxy: use VCSH (Book Value) for Model Z' or scaled equity
     const vhtt = { ...vcsh };
 
     // Edge cache on Vercel: 24h cache, 12h stale-while-revalidate
@@ -176,6 +230,7 @@ module.exports = async (req, res) => {
       symbol: ticker,
       companyName,
       exchange,
+      isUnlisted: Boolean(isUnlisted),
       currentPrice,
       years: years.map(y => parseInt(y, 10)),
       unit: 'tỷ VNĐ',
