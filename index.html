@@ -832,6 +832,7 @@
 
       <!-- SPREADSHEET MATRIX TABLE -->
       <div class="overflow-x-auto table-scrollbar p-4">
+        <div id="calc-mode-banner" class="mb-3"></div>
         <table class="w-full text-left border-collapse min-w-[700px]" id="matrix-table">
           <thead id="matrix-thead">
             <!-- Dynamic Year Range & Columns Injected Here -->
@@ -1162,19 +1163,27 @@
 
     // PRESET DEMO DATA (In Billions VND)
     // 1. Safe / Healthy Growth (Robust Manufacturing Leader - Khả quan năm thứ 6)
+    // Sample data for Year 6 quick filling / testing
+    const PRESET_Y6_SAMPLES = {
+      safe: { tsnh: 34500, nnh: 11800, tts: 57500, lncpp: 20800, lntt: 8600, cplv: 590, vhtt: 88000, tnpt: 17200, dtt: 67000 },
+      warning: { tsnh: 14600, nnh: 13800, tts: 30800, lncpp: 2700, lntt: 1500, cplv: 1400, vhtt: 17500, tnpt: 21800, dtt: 25000 },
+      distress: { tsnh: 4200, nnh: 13100, tts: 14200, lncpp: -5200, lntt: -2400, cplv: 1900, vhtt: 1800, tnpt: 19000, dtt: 7200 }
+    };
+
+    // 1. Safe / Healthy Growth (Mặc định ô 2026 trống để tính dải 2021 - 2025)
     const PRESET_SAFE = {
       model: 'Z',
       years: [2021, 2022, 2023, 2024, 2025, 2026],
       data: {
-        tsnh:  { 2021: 15400, 2022: 17800, 2023: 21500, 2024: 25200, 2025: 29800, 2026: 34500 },
-        nnh:   { 2021: 6200,  2022: 7100,  2023: 8400,  2024: 9300,  2025: 10500, 2026: 11800 },
-        tts:   { 2021: 28000, 2022: 32500, 2023: 38000, 2024: 43500, 2025: 50000, 2026: 57500 },
-        lncpp: { 2021: 7200,  2022: 8900,  2023: 11200, 2024: 13800, 2025: 17000, 2026: 20800 },
-        lntt:  { 2021: 3800,  2022: 4400,  2023: 5200,  2024: 6100,  2025: 7300,  2026: 8600 },
-        cplv:  { 2021: 450,   2022: 480,   2023: 510,   2024: 530,   2025: 560,   2026: 590 },
-        vhtt:  { 2021: 42000, 2022: 46000, 2023: 54000, 2024: 62000, 2025: 75000, 2026: 88000 },
-        tnpt:  { 2021: 9500,  2022: 10800, 2023: 12500, 2024: 13900, 2025: 15600, 2026: 17200 },
-        dtt:   { 2021: 31000, 2022: 36500, 2023: 42800, 2024: 49200, 2025: 58000, 2026: 67000 }
+        tsnh:  { 2021: 15400, 2022: 17800, 2023: 21500, 2024: 25200, 2025: 29800, 2026: '' },
+        nnh:   { 2021: 6200,  2022: 7100,  2023: 8400,  2024: 9300,  2025: 10500, 2026: '' },
+        tts:   { 2021: 28000, 2022: 32500, 2023: 38000, 2024: 43500, 2025: 50000, 2026: '' },
+        lncpp: { 2021: 7200,  2022: 8900,  2023: 11200, 2024: 13800, 2025: 17000, 2026: '' },
+        lntt:  { 2021: 3800,  2022: 4400,  2023: 5200,  2024: 6100,  2025: 7300,  2026: '' },
+        cplv:  { 2021: 450,   2022: 480,   2023: 510,   2024: 530,   2025: 560,   2026: '' },
+        vhtt:  { 2021: 42000, 2022: 46000, 2023: 54000, 2024: 62000, 2025: 75000, 2026: '' },
+        tnpt:  { 2021: 9500,  2022: 10800, 2023: 12500, 2024: 13900, 2025: 15600, 2026: '' },
+        dtt:   { 2021: 31000, 2022: 36500, 2023: 42800, 2024: 49200, 2025: 58000, 2026: '' }
       }
     };
 
@@ -1239,16 +1248,94 @@
     window.addEventListener('DOMContentLoaded', () => {
       loadSavedState();
       updateYearInputs();
-      updateYearBadge();
       initSimUI();
-      renderMatrixHeaders();
+      updateDynamicYearState();
       renderMatrixBody();
       updateModelCardStyles();
       calculateAll();
       initStockSearchUI();
       updateActiveCompanyBadge();
-      lucide.createIcons();
+      if (window.lucide) lucide.createIcons();
     });
+
+    function isYearEmpty(year) {
+      if (!currentData) return true;
+      const metrics = ['tsnh', 'nnh', 'tts', 'lncpp', 'lntt', 'cplv', 'vhtt', 'tnpt', 'dtt'];
+      for (const m of metrics) {
+        const val = (currentData[m] && currentData[m][year] !== undefined) ? currentData[m][year] : undefined;
+        if (val !== undefined && val !== null && val !== '') {
+          const num = parseFloat(val);
+          if (!isNaN(num) && num !== 0) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function getActiveYears() {
+      const has2021 = years.includes(2021);
+      const has2026 = years.includes(2026);
+
+      if (has2021 && has2026) {
+        if (isYearEmpty(2026)) {
+          // Năm 2026 trống -> tính toán và hiển thị dải 2021 - 2025
+          return [2021, 2022, 2023, 2024, 2025].filter(y => years.includes(y));
+        } else {
+          // Nhập dữ liệu 2026 -> tính toán và hiển thị dải 2022 - 2026
+          return [2022, 2023, 2024, 2025, 2026].filter(y => years.includes(y));
+        }
+      }
+
+      if (years.length >= 6) {
+        const lastY = years[years.length - 1];
+        return isYearEmpty(lastY) ? years.slice(0, 5) : years.slice(years.length - 5);
+      }
+
+      return [...years];
+    }
+
+    function updateDynamicYearState() {
+      updateYearBadge();
+      renderMatrixHeaders();
+      updateMatrixCellVisuals();
+    }
+
+    function updateMatrixCellVisuals() {
+      const actYears = getActiveYears();
+      const is2026Active = actYears.includes(2026);
+      const is2021Active = actYears.includes(2021);
+
+      document.querySelectorAll('#matrix-tbody td[data-year="2021"]').forEach(td => {
+        const input = td.querySelector('input');
+        if (is2021Active) {
+          td.className = 'py-2 px-2 text-center bg-indigo-50/20';
+          if (input) {
+            input.className = 'w-full text-right text-xs px-2.5 py-2 border rounded-lg outline-none transition font-semibold border-indigo-200 text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white';
+          }
+        } else {
+          td.className = 'py-2 px-2 text-center bg-slate-50/60 opacity-80';
+          if (input) {
+            input.className = 'w-full text-right text-xs px-2.5 py-2 border rounded-lg outline-none transition font-normal border-slate-200 text-slate-500 bg-slate-50/60 focus:border-indigo-400';
+          }
+        }
+      });
+
+      document.querySelectorAll('#matrix-tbody td[data-year="2026"]').forEach(td => {
+        const input = td.querySelector('input');
+        if (is2026Active) {
+          td.className = 'py-2 px-2 text-center bg-indigo-50/40 border-l-2 border-indigo-400';
+          if (input) {
+            input.className = 'w-full text-right text-xs px-2.5 py-2 border rounded-lg outline-none transition font-bold border-indigo-300 text-indigo-950 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 bg-white shadow-2xs';
+          }
+        } else {
+          td.className = 'py-2 px-2 text-center bg-amber-50/20 border-l-2 border-dashed border-amber-300';
+          if (input) {
+            input.className = 'w-full text-right text-xs px-2.5 py-2 border rounded-lg outline-none transition font-medium border-amber-200 text-slate-700 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-amber-50/20';
+          }
+        }
+      });
+    }
 
     function updateYearInputs() {
       const startInput = document.getElementById('input-start-year');
@@ -1260,7 +1347,20 @@
     function updateYearBadge() {
       const badge = document.getElementById('years-count-badge');
       if (badge && years.length > 0) {
-        badge.innerText = `${years[0]} - ${years[years.length - 1]}`;
+        const act = getActiveYears();
+        const isY6Empty = isYearEmpty(2026);
+        if (years.includes(2021) && years.includes(2026)) {
+          if (isY6Empty) {
+            badge.innerHTML = `<span class="font-black text-amber-700">⚡ Đang tính 2021 - 2025</span> <span class="text-[10px] text-amber-600 font-medium">(Ô 2026 trống)</span>`;
+            badge.className = 'text-xs font-semibold px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs';
+          } else {
+            badge.innerHTML = `<span class="font-black text-emerald-700">✅ Đang tính 2022 - 2026</span> <span class="text-[10px] text-emerald-600 font-medium">(Đã nhập 2026)</span>`;
+            badge.className = 'text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-300 shadow-2xs';
+          }
+        } else {
+          badge.innerText = `${act[0]} - ${act[act.length - 1]} (${act.length} năm)`;
+          badge.className = 'text-xs font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700';
+        }
       }
     }
 
@@ -1351,9 +1451,58 @@
     // RENDER MATRIX TABLE
     // ==========================================
     function renderMatrixHeaders() {
-      const startYear = years[0];
-      const endYear = years[years.length - 1];
-      const rangeText = `${startYear} - ${endYear}`;
+      const isY6Empty = isYearEmpty(2026);
+      const actYears = getActiveYears();
+
+      // Update calculation banner above table
+      const banner = document.getElementById('calc-mode-banner');
+      if (banner) {
+        if (years.includes(2021) && years.includes(2026)) {
+          if (isY6Empty) {
+            banner.innerHTML = `
+              <div class="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs shadow-xs">
+                <div class="flex items-center gap-2.5">
+                  <span class="flex h-2.5 w-2.5 relative flex-shrink-0">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                  </span>
+                  <div>
+                    <span class="font-black text-amber-950">Chế độ tính toán:</span>
+                    <span> Ô năm <b>2026 đang trống</b> ➔ Bảng kết quả, đồ thị và chẩn đoán hiển thị dải 5 năm <b>2021 - 2025</b>.</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="copyYear5ToYear6()" class="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-3 py-1.5 rounded-lg font-bold text-xs transition shadow-2xs flex items-center gap-1">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i> Chép Năm 2025 sang 2026 ➔ Tính 2022-2026
+                  </button>
+                </div>
+              </div>
+            `;
+          } else {
+            banner.innerHTML = `
+              <div class="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs shadow-xs">
+                <div class="flex items-center gap-2.5">
+                  <span class="flex h-2.5 w-2.5 relative flex-shrink-0">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                  <div>
+                    <span class="font-black text-emerald-950">Chế độ tính toán:</span>
+                    <span> Đã nhập số liệu năm <b>2026</b> ➔ Tự động tính toán & hiển thị dải 5 năm <b>2022 - 2026</b> (Ô năm 2021 lưu trữ làm lịch sử tham chiếu).</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="clearYear6Data()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-lg font-bold text-xs transition shadow-2xs flex items-center gap-1">
+                    <i data-lucide="eraser" class="w-3.5 h-3.5"></i> Xóa ô 2026 ➔ Quay về tính 2021-2025
+                  </button>
+                </div>
+              </div>
+            `;
+          }
+        } else {
+          banner.innerHTML = '';
+        }
+      }
 
       // 1. Table 1: Matrix Input Header
       const matrixThead = document.getElementById('matrix-thead');
@@ -1363,29 +1512,51 @@
             <th rowspan="2" class="py-3 px-4 w-72 rounded-tl-xl align-middle border-r border-slate-200">Chỉ Tiêu BCTC</th>
             <th rowspan="2" class="py-3 px-2 w-20 text-center text-slate-500 align-middle border-r border-slate-200">Ký Hiệu</th>
             <th colspan="${years.length}" class="py-2.5 px-3 text-center font-extrabold text-indigo-700 bg-indigo-50 border-b border-indigo-200 text-sm tracking-wider">
-              ${rangeText}
+              <div class="flex items-center justify-center gap-2">
+                <span>Ma Trận Nhập Liệu (${years[0]} - ${years[years.length - 1]})</span>
+                <span class="text-xs px-2.5 py-0.5 rounded-full font-bold ${isY6Empty ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'}">
+                  ${isY6Empty ? '⚡ Đang tính 2021 - 2025' : '✅ Đang tính 2022 - 2026'}
+                </span>
+              </div>
             </th>
           </tr>
           <tr class="border-b border-slate-200 text-slate-700 text-xs uppercase font-bold tracking-wider bg-slate-100/60">
-            ${years.map((y, idx) => {
-              const isYear6 = (idx === 5);
-              if (isYear6) {
+            ${years.map((y) => {
+              const isYear2021 = (y === 2021);
+              const isYear2026 = (y === 2026);
+              const isActiveInCalc = actYears.includes(y);
+
+              if (isYear2026) {
                 return `
-                  <th class="py-2.5 px-3 text-center w-40 font-bold text-indigo-950 bg-indigo-100/70 border-l-2 border-indigo-400 border-r border-slate-200 last:border-r-0">
+                  <th class="py-2.5 px-3 text-center w-40 font-bold ${isActiveInCalc ? 'text-indigo-950 bg-indigo-100/80 border-l-2 border-indigo-500' : 'text-slate-600 bg-amber-50/50 border-l-2 border-dashed border-amber-300'} border-r border-slate-200 last:border-r-0">
                     <div class="flex flex-col items-center justify-center gap-0.5">
                       <span class="font-black text-indigo-900 text-sm">${y}</span>
-                      <span class="bg-indigo-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold shadow-xs flex items-center gap-0.5">
-                        <i data-lucide="sparkles" class="w-2.5 h-2.5"></i> Năm thứ 6
+                      <span class="${isActiveInCalc ? 'bg-indigo-600 text-white' : 'bg-amber-200 text-amber-800'} text-[9px] px-1.5 py-0.5 rounded font-bold shadow-xs flex items-center gap-0.5">
+                        <i data-lucide="sparkles" class="w-2.5 h-2.5"></i> ${isActiveInCalc ? 'Năm 6 (Đang tính)' : 'Năm 6 (Trống)'}
                       </span>
                     </div>
                   </th>
                 `;
               }
+
+              if (isYear2021) {
+                return `
+                  <th class="py-2.5 px-3 text-center w-36 font-bold ${isActiveInCalc ? 'text-indigo-950 bg-indigo-50/70 border-b-2 border-indigo-500' : 'text-slate-500 bg-slate-100/60'} border-r border-slate-200 last:border-r-0">
+                    <div class="flex flex-col items-center justify-center gap-0.5">
+                      <span class="font-extrabold ${isActiveInCalc ? 'text-indigo-900' : 'text-slate-500'}">${y}</span>
+                      <span class="text-[9px] px-1.5 py-0.5 rounded font-bold ${isActiveInCalc ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-500'}">
+                        ${isActiveInCalc ? 'Năm 1 (Đang tính)' : 'Lịch sử tham chiếu'}
+                      </span>
+                    </div>
+                  </th>
+                `;
+              }
+
               return `
-                <th class="py-2.5 px-3 text-center w-36 font-bold text-slate-800 border-r border-slate-200 last:border-r-0">
+                <th class="py-2.5 px-3 text-center w-36 font-bold text-slate-800 bg-indigo-50/30 border-r border-slate-200 last:border-r-0">
                   <div class="flex items-center justify-center gap-1.5">
                     <span class="font-extrabold text-slate-900">${y}</span>
-                    ${(y === endYear && !isYear6) ? '<span class="bg-indigo-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold shadow-sm">Mới nhất</span>' : ''}
+                    ${(y === 2025 && isY6Empty) ? '<span class="bg-indigo-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold shadow-sm">Mới nhất</span>' : ''}
                   </div>
                 </th>
               `;
@@ -1393,15 +1564,18 @@
           </tr>
         `;
       }
+      if (window.lucide) lucide.createIcons();
     }
 
     function renderResultsHeaders(simRes) {
       const resultsThead = document.getElementById('results-thead');
       if (!resultsThead) return;
-      const startYear = years[0];
-      const endYear = years[years.length - 1];
+      const actYears = getActiveYears();
+      const startYear = actYears[0];
+      const endYear = actYears[actYears.length - 1];
       const hasSim = simConfig.enabled && simRes;
-      const totalColSpan = years.length + (hasSim ? 1 : 0);
+      const totalColSpan = actYears.length + (hasSim ? 1 : 0);
+      const isY6Included = actYears.includes(2026);
       const rangeText = `${startYear} - ${endYear}` + (hasSim ? ` & Dự báo ${simRes.year}` : '');
 
       resultsThead.innerHTML = `
@@ -1409,12 +1583,15 @@
           <th rowspan="2" class="py-3 px-4 w-72 align-middle border-r border-slate-200">Chỉ Số Đánh Giá</th>
           <th rowspan="2" class="py-3 px-2 w-28 text-center align-middle border-r border-slate-200">Ý Nghĩa Kinh Tế</th>
           <th colspan="${totalColSpan}" class="py-2.5 px-3 text-center font-extrabold text-indigo-700 bg-indigo-50 border-b border-indigo-200 text-sm tracking-wider">
-            ${rangeText}
+            <span>${rangeText}</span>
+            <span class="ml-2 text-[10px] font-black px-2.5 py-0.5 rounded-full ${isY6Included ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}">
+              ${isY6Included ? 'Giai đoạn tính 2022 - 2026 (5 năm)' : 'Giai đoạn tính 2021 - 2025 (5 năm)'}
+            </span>
           </th>
         </tr>
         <tr class="border-b border-slate-200 text-slate-700 text-xs uppercase font-bold tracking-wider bg-slate-50/60">
-          ${years.map((y, idx) => {
-            const isYear6 = (idx === 5);
+          ${actYears.map((y, idx) => {
+            const isYear6 = (y === 2026);
             return `
               <th class="py-2.5 px-3 text-center w-32 font-bold text-slate-800 border-r border-slate-200 ${isYear6 ? 'bg-indigo-100/60 border-l-2 border-indigo-400 text-indigo-950' : ''}">
                 <div class="flex flex-col items-center justify-center">
@@ -1437,7 +1614,10 @@
     }
 
     function renderMatrixBody() {
+      const actYears = getActiveYears();
       const tbody = document.getElementById('matrix-tbody');
+      if (!tbody) return;
+
       tbody.innerHTML = METRIC_DEFINITIONS.map((metric, idx) => {
         return `
           <tr id="row-${metric.id}" class="hover:bg-slate-50 transition ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}">
@@ -1451,10 +1631,27 @@
               ${metric.code}
             </td>
             ${years.map((y, yIdx) => {
-              const val = (currentData[metric.id] && currentData[metric.id][y] !== undefined) ? currentData[metric.id][y] : '';
-              const isYear6 = (yIdx === 5);
+              const rawVal = (currentData[metric.id] && currentData[metric.id][y] !== undefined && currentData[metric.id][y] !== null) ? currentData[metric.id][y] : '';
+              const val = (rawVal === '' || rawVal === null || rawVal === undefined) ? '' : rawVal;
+              const isYear2026 = (y === 2026);
+              const isYear2021 = (y === 2021);
+              const isActiveInCalc = actYears.includes(y);
+
+              let tdClass = 'py-2 px-2 text-center';
+              let inputClass = 'w-full text-right text-xs px-2.5 py-2 border rounded-lg outline-none transition';
+
+              if (isYear2026) {
+                tdClass += isActiveInCalc ? ' bg-indigo-50/40 border-l-2 border-indigo-400' : ' bg-amber-50/20 border-l-2 border-dashed border-amber-300';
+                inputClass += isActiveInCalc ? ' font-bold border-indigo-300 text-indigo-950 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 bg-white shadow-2xs' : ' font-medium border-amber-200 text-slate-700 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-amber-50/20';
+              } else if (isYear2021 && !isActiveInCalc) {
+                tdClass += ' bg-slate-50/60 opacity-80';
+                inputClass += ' font-normal border-slate-200 text-slate-500 bg-slate-50/60 focus:border-indigo-400';
+              } else {
+                inputClass += ' font-semibold border-slate-200 text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white';
+              }
+
               return `
-                <td class="py-2 px-2 text-center ${isYear6 ? 'bg-indigo-50/40 border-l-2 border-indigo-300' : ''}">
+                <td class="${tdClass}" data-year="${y}" id="cell-${metric.id}-${y}">
                   <div class="relative">
                     <input 
                       type="number" 
@@ -1462,9 +1659,9 @@
                       id="input-${metric.id}-${y}" 
                       value="${val}" 
                       oninput="onInputChange('${metric.id}', ${y}, this.value)"
-                      placeholder="0" 
-                      class="w-full text-right text-xs ${isYear6 ? 'font-bold border-indigo-300 text-indigo-950 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100' : 'font-semibold border-slate-200 text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100'} px-2.5 py-2 border rounded-lg bg-white outline-none transition"
-                      title="${isYear6 ? `Nhập số liệu Năm thứ 6 (${y}) cho ${metric.name}` : `Năm ${y}`}"
+                      placeholder="${isYear2026 ? 'Trống (nhập để tính 2022-2026)' : '0'}" 
+                      class="${inputClass}"
+                      title="Năm ${y} - ${metric.name}"
                     >
                   </div>
                 </td>
@@ -1477,7 +1674,11 @@
 
     function onInputChange(metricId, year, value) {
       if (!currentData[metricId]) currentData[metricId] = {};
-      currentData[metricId][year] = parseFloat(value) || 0;
+      if (value === '' || value === null || value === undefined) {
+        currentData[metricId][year] = '';
+      } else {
+        currentData[metricId][year] = parseFloat(value) || 0;
+      }
 
       // Two-way sync with Year 6 Quick Input field if editing Year 6
       if (years.length >= 6 && year === years[5]) {
@@ -1487,6 +1688,7 @@
         }
       }
 
+      updateDynamicYearState();
       calculateAll();
       saveState();
     }
@@ -1827,9 +2029,10 @@
       });
 
       // Calculate simulation result for next projected year
+      const actYears = getActiveYears();
       let simRes = null;
-      if (years.length > 0) {
-        simRes = calculateSimulatedYear(years[years.length - 1], resultsPerYear);
+      if (actYears.length > 0) {
+        simRes = calculateSimulatedYear(actYears[actYears.length - 1], resultsPerYear);
       }
 
       renderResultsTable(resultsPerYear, simRes);
@@ -1837,6 +2040,7 @@
       updateHighlightBox(resultsPerYear);
       updateAIDiagnostic(resultsPerYear);
       updateYear6Diagnostic(resultsPerYear);
+      renderYear6QuickInputs();
       if (componentsChartInstance || (document.getElementById('components-chart-wrapper') && !document.getElementById('components-chart-wrapper').classList.contains('hidden'))) {
         updateComponentsChart(resultsPerYear, simRes);
       }
@@ -1848,6 +2052,7 @@
     // ==========================================
     function renderResultsTable(res, simRes) {
       renderResultsHeaders(simRes);
+      const actYears = getActiveYears();
       const tbody = document.getElementById('results-tbody');
       const tfoot = document.getElementById('results-tfoot');
       const hasSim = simConfig.enabled && simRes;
@@ -1864,7 +2069,7 @@
         let simColHtml = '';
         if (hasSim) {
           const simVal = simRes[comp.key];
-          const latestVal = res[years[years.length - 1]] ? res[years[years.length - 1]][comp.key] : null;
+          const latestVal = res[actYears[actYears.length - 1]] ? res[actYears[actYears.length - 1]][comp.key] : null;
           let trendSimIcon = '';
           if (latestVal !== null) {
             const diff = simVal - latestVal;
@@ -1887,16 +2092,16 @@
             <td class="py-2.5 px-2 text-center text-slate-500 text-[11px]">
               ${comp.meaning}
             </td>
-            ${years.map((y, idx) => {
+            ${actYears.map((y, idx) => {
               const val = res[y] ? res[y][comp.key] : 0;
-              const prevVal = (idx > 0 && res[years[idx - 1]]) ? res[years[idx - 1]][comp.key] : null;
+              const prevVal = (idx > 0 && res[actYears[idx - 1]]) ? res[actYears[idx - 1]][comp.key] : null;
               let trendIcon = '';
               if (prevVal !== null) {
                 const diff = val - prevVal;
                 if (diff > 0.001) trendIcon = '<span class="text-emerald-600 font-bold ml-1">↑</span>';
                 else if (diff < -0.001) trendIcon = '<span class="text-rose-600 font-bold ml-1">↓</span>';
               }
-              const isYear6 = (idx === 5);
+              const isYear6 = (y === 2026);
               return `
                 <td class="py-2 px-3 text-center font-mono ${isYear6 ? 'font-black text-indigo-950 bg-indigo-50/50 border-l-2 border-indigo-400' : 'font-medium text-slate-700'}">
                   <span>${val.toFixed(4)}</span>
@@ -1942,17 +2147,17 @@
       tfoot.innerHTML = `
         <tr class="bg-indigo-50/60 border-t-2 border-indigo-200">
           <td class="py-3 px-4 font-bold text-slate-900 text-sm">
-            Điểm Số ${currentModel === 'Z' ? 'Altman Z' : 'Altman Z\''}
+            Điểm Số ${currentModel === 'Z' ? 'Altman Z' : "Altman Z'"}
           </td>
           <td class="py-3 px-2 text-center font-bold text-indigo-700">
             Tổng hợp
           </td>
-          ${years.map((y, idx) => {
+          ${actYears.map((y, idx) => {
             const score = res[y] ? res[y].score : 0;
             let color = 'text-emerald-600';
             if (res[y] && res[y].zone === 'distress') color = 'text-rose-600';
             else if (res[y] && res[y].zone === 'grey') color = 'text-amber-600';
-            const isYear6 = (idx === 5);
+            const isYear6 = (y === 2026);
 
             return `
               <td class="py-3 px-3 text-center font-mono font-black text-sm sm:text-base ${color} ${isYear6 ? 'bg-indigo-100/70 border-l-2 border-indigo-400' : ''}">
@@ -1969,7 +2174,7 @@
           <td class="py-2.5 px-2 text-center text-slate-400">
             Trạng thái
           </td>
-          ${years.map((y, idx) => {
+          ${actYears.map((y, idx) => {
             const zone = res[y] ? res[y].zone : 'distress';
             let badge = '';
             if (zone === 'safe') {
@@ -1979,7 +2184,7 @@
             } else {
               badge = '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300">Nguy hiểm</span>';
             }
-            const isYear6 = (idx === 5);
+            const isYear6 = (y === 2026);
             return `
               <td class="py-2.5 px-3 text-center ${isYear6 ? 'bg-indigo-100/40 border-l-2 border-indigo-400' : ''}">
                 ${badge}
@@ -1991,13 +2196,11 @@
       `;
     }
 
-    // ==========================================
-    // CHART.JS: COMBO BAR & LINE CHART
-    // ==========================================
     function updateChart(res, simRes) {
+      const actYears = getActiveYears();
       const hasSim = simConfig.enabled && simRes;
-      const labels = years.map((y, idx) => (idx === 5) ? `Năm ${y} (Năm 6)` : `Năm ${y}`);
-      const scores = years.map(y => res[y] ? Number(res[y].score.toFixed(3)) : 0);
+      const labels = actYears.map((y, idx) => (y === 2026) ? `Năm ${y} (Năm 6)` : `Năm ${y}`);
+      const scores = actYears.map(y => res[y] ? Number(res[y].score.toFixed(3)) : 0);
 
       if (hasSim) {
         labels.push(`Năm ${simRes.year} [Dự phóng]`);
@@ -2009,14 +2212,14 @@
       const distressThresholdArray = labels.map(() => th.distress);
 
       // Bar Colors dynamic per zone
-      const barColors = years.map(y => {
+      const barColors = actYears.map(y => {
         const zone = res[y] ? res[y].zone : 'distress';
         if (zone === 'safe') return 'rgba(16, 185, 129, 0.85)'; // Emerald
         if (zone === 'grey') return 'rgba(245, 158, 11, 0.85)'; // Amber
         return 'rgba(239, 68, 68, 0.85)'; // Red
       });
 
-      const barBorders = years.map(y => {
+      const barBorders = actYears.map(y => {
         const zone = res[y] ? res[y].zone : 'distress';
         if (zone === 'safe') return '#059669';
         if (zone === 'grey') return '#d97706';
@@ -2068,23 +2271,23 @@
             // 2. Bar chart per year
             {
               type: 'bar',
-              label: 'Điểm Số Altman Z-Score',
+              label: 'Điểm Z-Score Từng Năm',
               data: scores,
               backgroundColor: barColors,
               borderColor: barBorders,
-              borderWidth: labels.map((_, i) => (hasSim && i === labels.length - 1) ? 2.5 : 1.5),
+              borderWidth: 1.5,
               borderRadius: 8,
-              barPercentage: 0.45,
+              barPercentage: 0.55,
               order: 2
             },
             // 3. Safe Zone Threshold Line
             {
               type: 'line',
-              label: `Ngưỡng An Toàn (${th.safe})`,
+              label: `Ngưỡng An Toàn (Z ≥ ${th.safe})`,
               data: safeThresholdArray,
-              borderColor: '#059669',
+              borderColor: 'rgba(16, 185, 129, 0.65)',
               borderWidth: 2,
-              borderDash: [6, 4],
+              borderDash: [5, 5],
               pointRadius: 0,
               fill: false,
               order: 3
@@ -2092,11 +2295,11 @@
             // 4. Distress Zone Threshold Line
             {
               type: 'line',
-              label: `Ngưỡng Nguy Cơ (${th.distress})`,
+              label: `Ngưỡng Nguy Cơ (Z < ${th.distress})`,
               data: distressThresholdArray,
-              borderColor: '#dc2626',
+              borderColor: 'rgba(239, 68, 68, 0.65)',
               borderWidth: 2,
-              borderDash: [6, 4],
+              borderDash: [5, 5],
               pointRadius: 0,
               fill: false,
               order: 4
@@ -2112,37 +2315,33 @@
           },
           plugins: {
             legend: {
-              display: true,
               position: 'top',
               labels: {
-                boxWidth: 14,
-                font: { family: 'Inter', size: 11, weight: '500' },
-                padding: 12
+                boxWidth: 12,
+                boxHeight: 12,
+                font: { size: 11, weight: 'bold' },
+                padding: 15,
+                usePointStyle: true
               }
             },
             tooltip: {
               backgroundColor: 'rgba(15, 23, 42, 0.95)',
-              titleFont: { family: 'Inter', size: 12, weight: '700' },
-              bodyFont: { family: 'Inter', size: 11 },
-              padding: 10,
-              cornerRadius: 8,
+              titleFont: { size: 12, weight: 'bold' },
+              bodyFont: { size: 11 },
+              padding: 12,
+              cornerRadius: 10,
               callbacks: {
-                afterBody: function(context) {
-                  const dataIndex = context[0].dataIndex;
-                  if (hasSim && dataIndex === labels.length - 1) {
-                    let status = 'Vùng an toàn (Sức khỏe tốt)';
-                    if (simRes.zone === 'grey') status = 'Vùng xám (Cần cảnh báo)';
-                    if (simRes.zone === 'distress') status = 'Vùng nguy cơ phá sản cao';
-                    const sign = simRes.deltaScore >= 0 ? '+' : '';
-                    return `\n[KỊCH BẢN MÔ PHỎNG DỰ BÁO]\nTrạng thái: ${status}\nBiến thiên: ${sign}${simRes.deltaScore.toFixed(2)} điểm\nX₁ (Vốn LĐ): ${simRes.x1.toFixed(3)}\nX₃ (EBIT/TTS): ${simRes.x3.toFixed(3)}\nX₄ (VCSH/Nợ): ${simRes.x4.toFixed(3)}\nX₅ (Vòng quay): ${simRes.x5.toFixed(3)}`;
+                label: function (context) {
+                  if (context.datasetIndex === 0) {
+                    const val = context.parsed.y;
+                    let label = `Điểm Z-Score: ${val.toFixed(3)}`;
+                    if (val >= th.safe) label += ' (Vùng An Toàn)';
+                    else if (val < th.distress) label += ' (Vùng Nguy Cơ Phá Sản)';
+                    else label += ' (Vùng Cảnh Báo / Xám)';
+                    return label;
                   }
-                  const targetYear = years[dataIndex];
-                  const z = res[targetYear];
-                  if (!z) return '';
-                  let status = 'Vùng an toàn (Sức khỏe tốt)';
-                  if (z.zone === 'grey') status = 'Vùng xám (Cần cảnh báo)';
-                  if (z.zone === 'distress') status = 'Vùng nguy cơ phá sản cao';
-                  return `\nTrạng thái: ${status}\nX₁ (Vốn LĐ): ${z.x1.toFixed(3)}\nX₃ (EBIT/TTS): ${z.x3.toFixed(3)}\nX₄ (VCSH/Nợ): ${z.x4.toFixed(3)}`;
+                  if (context.datasetIndex === 1) return null;
+                  return `${context.dataset.label}: ${context.parsed.y}`;
                 }
               }
             }
@@ -2150,26 +2349,24 @@
           scales: {
             x: {
               grid: { display: false },
-              ticks: { font: { family: 'Inter', size: 12, weight: '600' }, color: '#475569' }
+              ticks: { font: { size: 11, weight: 'bold' }, color: '#475569' }
             },
             y: {
-              grid: { color: 'rgba(226, 232, 240, 0.7)' },
-              ticks: { font: { family: 'Inter', size: 11 }, color: '#64748b' },
               suggestedMin: 0,
-              suggestedMax: Math.max(...scores, th.safe + 1)
+              suggestedMax: 4.5,
+              grid: { color: 'rgba(226, 232, 240, 0.8)' },
+              ticks: { font: { size: 10 }, color: '#64748b' }
             }
           }
         }
       });
     }
 
-    // ==========================================
-    // HIGHLIGHT BOX & STATS SUMMARY
-    // ==========================================
     function updateHighlightBox(res) {
-      if (years.length === 0) return;
-      const latestYear = years[years.length - 1];
-      const prevYear = years.length > 1 ? years[years.length - 2] : null;
+      const actYears = getActiveYears();
+      if (actYears.length === 0) return;
+      const latestYear = actYears[actYears.length - 1];
+      const prevYear = actYears.length > 1 ? actYears[actYears.length - 2] : null;
       const latest = res[latestYear] || { score: 0, zone: 'distress' };
 
       document.getElementById('highlight-year-label').innerText = latestYear;
@@ -2198,21 +2395,21 @@
         badgeEl.innerText = 'VÙNG AN TOÀN';
         badgeEl.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
         document.getElementById('highlight-summary-desc').innerText = 'Doanh nghiệp có cơ cấu tài chính lành mạnh, đòn bẩy hợp lý và khả năng đáp ứng nghĩa vụ nợ rất tốt.';
-        chartLatestEl.innerHTML = `<span class="text-emerald-600 font-bold">Năm ${latestYear}: An toàn (${latest.score.toFixed(2)})</span>`;
+        if (chartLatestEl) chartLatestEl.innerHTML = `<span class="text-emerald-600 font-bold">Năm ${latestYear}: An toàn (${latest.score.toFixed(2)})</span>`;
       } else if (latest.zone === 'grey') {
         badgeEl.innerText = 'VÙNG XÁM CẢNH BÁO';
         badgeEl.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40';
         document.getElementById('highlight-summary-desc').innerText = 'Doanh nghiệp đang đối mặt với một số rủi ro thanh khoản hoặc đòn bẩy nợ cao. Cần theo dõi chặt chẽ dòng tiền.';
-        chartLatestEl.innerHTML = `<span class="text-amber-600 font-bold">Năm ${latestYear}: Vùng xám (${latest.score.toFixed(2)})</span>`;
+        if (chartLatestEl) chartLatestEl.innerHTML = `<span class="text-amber-600 font-bold">Năm ${latestYear}: Vùng xám (${latest.score.toFixed(2)})</span>`;
       } else {
         badgeEl.innerText = 'VÙNG NGUY CƠ PHÁ SẢN';
         badgeEl.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
         document.getElementById('highlight-summary-desc').innerText = 'Cảnh báo đỏ: Doanh nghiệp chịu áp lực nợ nần nghiêm trọng hoặc hoạt động kinh doanh thua lỗ, nguy cơ kiệt quệ tài chính cao.';
-        chartLatestEl.innerHTML = `<span class="text-rose-600 font-bold">Năm ${latestYear}: Nguy hiểm (${latest.score.toFixed(2)})</span>`;
+        if (chartLatestEl) chartLatestEl.innerHTML = `<span class="text-rose-600 font-bold">Năm ${latestYear}: Nguy hiểm (${latest.score.toFixed(2)})</span>`;
       }
 
-      // Average & Trend
-      const scores = years.map(y => res[y] ? res[y].score : 0);
+      // Average & Trend across actYears
+      const scores = actYears.map(y => res[y] ? res[y].score : 0);
       const avg = scores.reduce((a, b) => a + b, 0) / (scores.length || 1);
       document.getElementById('highlight-avg-score').innerText = avg.toFixed(2);
 
@@ -2229,192 +2426,116 @@
       }
     }
 
-    // ==========================================
-    // AI / FINANCIAL DIAGNOSTIC INSIGHTS
-    // ==========================================
     function updateAIDiagnostic(res) {
-      if (years.length === 0) return;
-      const latestYear = years[years.length - 1];
+      const actYears = getActiveYears();
+      if (actYears.length === 0) return;
+      const latestYear = actYears[actYears.length - 1];
+      const startYear = actYears[0];
       const latest = res[latestYear];
       const container = document.getElementById('ai-diagnostic-content');
-      if (!latest) return;
+      if (!latest || !container) return;
 
-      const insights = [];
+      const th = MODEL_THRESHOLDS[currentModel];
+      let p1 = '';
+      let p2 = '';
+      let p3 = '';
 
-      // 1. Working Capital Check (X1)
-      if (latest.x1 < 0) {
-        insights.push({
-          type: 'danger',
-          icon: 'alert-circle',
-          text: `<b>Vốn lưu động ròng âm (X₁ = ${latest.x1.toFixed(3)})</b>: Nợ ngắn hạn vượt quá tài sản ngắn hạn, tiềm ẩn rủi ro thiếu hụt thanh khoản trong ngắn hạn.`
-        });
-      } else if (latest.x1 > 0.25) {
-        insights.push({
-          type: 'success',
-          icon: 'check-circle-2',
-          text: `<b>Thanh khoản dồi dào (X₁ = ${latest.x1.toFixed(3)})</b>: Doanh nghiệp có tấm đệm vốn lưu động ròng vững chắc để hấp thụ các biến động thị trường.`
-        });
-      }
+      const isY6Included = actYears.includes(2026);
+      const windowNote = isY6Included 
+        ? `<div class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 mb-2">📊 Đang chẩn đoán dải 5 năm 2022 - 2026 (Đã nhập số liệu 2026).</div>` 
+        : `<div class="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 mb-2">📊 Đang chẩn đoán dải 5 năm 2021 - 2025 (Do ô 2026 đang để trống).</div>`;
 
-      // 2. Profitability Check (X3)
-      if (latest.x3 < 0) {
-        insights.push({
-          type: 'danger',
-          icon: 'trending-down',
-          text: `<b>Hiệu quả sinh lời âm (EBIT/TTS = ${latest.x3.toFixed(3)})</b>: Hoạt động kinh doanh cốt lõi không tạo ra đủ lợi nhuận bù đắp chi phí vốn.`
-        });
-      } else if (latest.x3 > 0.12) {
-        insights.push({
-          type: 'success',
-          icon: 'trending-up',
-          text: `<b>Sinh lời tốt (X₃ = ${latest.x3.toFixed(3)})</b>: Tỷ suất sinh lời EBIT trên tài sản cao, là động lực chính duy trì sức khỏe tài chính.`
-        });
-      }
-
-      // 3. Leverage Check (X4)
-      if (latest.x4 < 0.5) {
-        insights.push({
-          type: 'warning',
-          icon: 'shield-alert',
-          text: `<b>Đòn bẩy nợ cao (VCSH/Tổng nợ = ${latest.x4.toFixed(3)})</b>: Tỷ lệ phụ thuộc vào nợ vay quá lớn, làm tăng tính nhạy cảm với rủi ro lãi suất.`
-        });
-      } else if (latest.x4 > 1.5) {
-        insights.push({
-          type: 'success',
-          icon: 'shield-check',
-          text: `<b>Cơ cấu vốn an toàn (X₄ = ${latest.x4.toFixed(3)})</b>: Vốn chủ sở hữu lớn hơn nhiều so với nợ phải trả, biên độ an toàn nợ rất cao.`
-        });
-      }
-
-      // Fallback if neutral
-      if (insights.length === 0) {
-        insights.push({
-          type: 'info',
-          icon: 'info',
-          text: `Các chỉ số tài chính của doanh nghiệp đang ở mức trung bình của ngành, duy trì trạng thái ổn định vừa phải qua các năm.`
-        });
-      }
-
-      container.innerHTML = insights.map(item => {
-        let badgeColor = 'bg-slate-50 border-slate-200 text-slate-700';
-        if (item.type === 'danger') badgeColor = 'bg-rose-50 border-rose-200 text-rose-800';
-        if (item.type === 'warning') badgeColor = 'bg-amber-50 border-amber-200 text-amber-800';
-        if (item.type === 'success') badgeColor = 'bg-emerald-50 border-emerald-200 text-emerald-800';
-
-        return `
-          <div class="p-2.5 rounded-xl border ${badgeColor} flex items-start gap-2">
-            <span class="mt-0.5">•</span>
-            <span>${item.text}</span>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // ==========================================
-    // COMPONENT BREAKDOWN CHART (OPTIONAL TOGGLE)
-    // ==========================================
-    function toggleComponentChart() {
-      const wrapper = document.getElementById('components-chart-wrapper');
-      const btnText = document.getElementById('btn-toggle-components-text');
-      if (wrapper.classList.contains('hidden')) {
-        wrapper.classList.remove('hidden');
-        btnText.innerText = 'Ẩn Biểu Đồ Bóc Tách X₁ - X₅';
-        updateComponentsChart();
+      // Diagnostic assessment
+      if (latest.zone === 'safe') {
+        p1 = `<b>1. Đánh giá tổng thể:</b> Sức khỏe tài chính năm ${latestYear} đạt <b>${latest.score.toFixed(2)} điểm</b>, duy trì vững chắc trong <b>Vùng An Toàn</b> (vượt xa ngưỡng chuẩn ${th.safe}). Nguy cơ phá sản hoặc mất khả năng thanh toán trong chu kỳ tới ở mức tối thiểu.`;
+      } else if (latest.zone === 'grey') {
+        p1 = `<b>1. Đánh giá tổng thể:</b> Điểm số năm ${latestYear} đạt <b>${latest.score.toFixed(2)} điểm</b>, nằm trong <b>Vùng Cảnh Báo (Vùng Xám)</b>. Doanh nghiệp cần đặc biệt lưu ý kiểm soát các nghĩa vụ nợ ngắn hạn và chi phí lãi vay.`;
       } else {
-        wrapper.classList.add('hidden');
-        btnText.innerText = 'Xem Biểu Đồ Bóc Tách X₁ - X₅';
+        p1 = `<b>1. Đánh giá tổng thể:</b> Báo động rủi ro! Điểm số năm ${latestYear} chỉ đạt <b>${latest.score.toFixed(2)} điểm</b>, rơi sâu vào <b>Vùng Nguy Hiểm</b> (dưới ngưỡng ${th.distress}). Nguy cơ phá sản hoặc tái cơ cấu bắt buộc đang ở mức cao.`;
       }
+
+      // Trend across actYears
+      const scores = actYears.map(y => res[y] ? res[y].score : 0);
+      const firstScore = scores[0];
+      const lastScore = scores[scores.length - 1];
+      const delta = lastScore - firstScore;
+
+      if (delta > 0.2) {
+        p2 = `<b>2. Xu thế biến động (${startYear} - ${latestYear}):</b> Quỹ đạo tài chính liên tục cải thiện tích cực (tăng +${delta.toFixed(2)} điểm). Năng lực tự tài trợ từ lợi nhuận giữ lại (X₂) và hiệu quả sinh lời (X₃) là động lực chủ đạo giúp nâng hạng tín nhiệm.`;
+      } else if (delta < -0.2) {
+        p2 = `<b>2. Xu thế biến động (${startYear} - ${latestYear}):</b> Điểm số có xu hướng xói mòn (-${Math.abs(delta).toFixed(2)} điểm). Nguyên nhân thường do đòn bẩy nợ vay gia tăng hoặc biên lợi nhuận sụt giảm làm thu hẹp vùng đệm an toàn.`;
+      } else {
+        p2 = `<b>2. Xu thế biến động (${startYear} - ${latestYear}):</b> Điểm số duy trì trạng thái cân bằng ổn định quanh mức trung bình <b>${(scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2)}</b>, không có cú sốc thanh khoản lớn.`;
+      }
+
+      // Strongest & weakest components in latest year
+      const comps = [
+        { name: 'Khả năng thanh toán (X₁)', val: latest.x1 },
+        { name: 'Tích lũy lợi nhuận (X₂)', val: latest.x2 },
+        { name: 'Hiệu quả EBIT (X₃)', val: latest.x3 },
+        { name: 'Tỷ lệ đòn bẩy VCSH/Nợ (X₄)', val: latest.x4 },
+        { name: 'Vòng quay tài sản (X₅)', val: latest.x5 }
+      ];
+      comps.sort((a, b) => b.val - a.val);
+
+      p3 = `<b>3. Trụ cột then chốt:</b> <i>${comps[0].name}</i> là điểm tựa vững chắc nhất (đạt ${(comps[0].val * 100).toFixed(1)}%). Trong khi đó, doanh nghiệp cần chú ý cải thiện <i>${comps[comps.length - 1].name}</i> để tối ưu hóa sức khỏe toàn diện.`;
+
+      container.innerHTML = `${windowNote}<p>${p1}</p><p>${p2}</p><p>${p3}</p>`;
     }
 
     function updateComponentsChart(res, simRes) {
-      if (!res) {
-        calculateAll();
-        return;
-      }
-      const ctx = document.getElementById('componentsBarChart').getContext('2d');
-      if (componentsChartInstance) {
-        componentsChartInstance.destroy();
-      }
-
+      const actYears = getActiveYears();
+      const labels = actYears.map(y => `Năm ${y}`);
       const hasSim = simConfig.enabled && simRes;
-      const labels = years.map(y => `Năm ${y}`);
       if (hasSim) labels.push(`Năm ${simRes.year} (Dự phóng)`);
 
-      const getCompData = (key) => {
-        const arr = years.map(y => res[y] ? Number(res[y][key].toFixed(3)) : 0);
+      const getArr = (key) => {
+        const arr = actYears.map(y => res[y] ? Number(res[y][key].toFixed(3)) : 0);
         if (hasSim) arr.push(Number(simRes[key].toFixed(3)));
         return arr;
       };
 
-      const datasets = [
-        { label: 'X₁ (Vốn LĐ ròng / TTS)', data: getCompData('x1'), backgroundColor: '#3b82f6' },
-        { label: 'X₂ (LN giữ lại / TTS)', data: getCompData('x2'), backgroundColor: '#8b5cf6' },
-        { label: 'X₃ (EBIT / TTS)', data: getCompData('x3'), backgroundColor: '#10b981' },
-        { label: 'X₄ (VCSH / Tổng nợ)', data: getCompData('x4'), backgroundColor: '#f59e0b' },
-        { label: 'X₅ (DTT / TTS)', data: getCompData('x5'), backgroundColor: '#06b6d4' }
-      ];
+      const ctx = document.getElementById('componentsChart').getContext('2d');
+      if (componentsChartInstance) {
+        componentsChartInstance.destroy();
+      }
 
       componentsChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: { labels, datasets },
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'X1 (Vốn LĐ ròng / TTS)', data: getArr('x1'), borderColor: '#0284c7', backgroundColor: 'rgba(2, 132, 199, 0.1)', tension: 0.2 },
+            { label: 'X2 (LN giữ lại / TTS)', data: getArr('x2'), borderColor: '#16a34a', backgroundColor: 'rgba(22, 163, 74, 0.1)', tension: 0.2 },
+            { label: 'X3 (EBIT / TTS)', data: getArr('x3'), borderColor: '#9333ea', backgroundColor: 'rgba(147, 51, 234, 0.1)', tension: 0.2 },
+            { label: 'X4 (VCSH / Tổng nợ)', data: getArr('x4'), borderColor: '#ea580c', backgroundColor: 'rgba(234, 88, 12, 0.1)', tension: 0.2 },
+            { label: 'X5 (DTT / TTS)', data: getArr('x5'), borderColor: '#e11d48', backgroundColor: 'rgba(225, 29, 72, 0.1)', tension: 0.2 }
+          ]
+        },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'top', labels: { boxWidth: 12, font: { family: 'Inter', size: 10 } } }
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
           },
           scales: {
-            x: { grid: { display: false } },
-            y: { grid: { color: 'rgba(226, 232, 240, 0.7)' } }
+            y: { grid: { color: 'rgba(226, 232, 240, 0.7)' }, ticks: { font: { size: 10 } } },
+            x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } }
           }
         }
       });
     }
 
-    // ==========================================
-    // YEAR 6 FINANCIAL DIAGNOSTIC & MANAGEMENT
-    // ==========================================
     function updateYear6Diagnostic(resultsPerYear) {
       const section = document.getElementById('year6-diagnostic-section');
       if (!section) return;
 
-      if (years.length < 6) {
-        const badge = document.getElementById('y6-header-badge');
-        if (badge) badge.innerText = 'Chưa kích hoạt';
-        const tag = document.getElementById('y6-verdict-tag');
-        if (tag) {
-          tag.className = 'px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-slate-800 text-slate-400 border border-slate-700';
-          tag.innerText = 'CẦN THÊM NĂM THỨ 6';
-        }
-        const scoreVal = document.getElementById('y6-score-val');
-        if (scoreVal) scoreVal.innerText = '--';
-        const deltaVal = document.getElementById('y6-delta-val');
-        if (deltaVal) {
-          deltaVal.innerText = '--';
-          deltaVal.className = 'text-slate-400 text-sm font-bold';
-        }
-        const deltaText = document.getElementById('y6-delta-text');
-        if (deltaText) deltaText.innerText = 'Cần dải 6 năm';
-        const headline = document.getElementById('y6-verdict-headline');
-        if (headline) headline.innerHTML = `<span class="text-amber-400 font-bold">Bảng hiện có ${years.length} năm (${years[0]} - ${years[years.length - 1]})</span>`;
-        const explanation = document.getElementById('y6-verdict-explanation');
-        if (explanation) explanation.innerHTML = `Bấm nút <b>"+ Năm Thứ 6 (${years[years.length - 1] + 1})"</b> trên thanh công cụ để mở thêm cột nhập liệu cho năm thứ 6 và nhận kết quả chẩn đoán chuyên sâu.`;
-        return;
-      }
-
-      const y6 = years[5];
-      const y5 = years[4];
-      const badge = document.getElementById('y6-header-badge');
-      if (badge) badge.innerText = `Năm ${y6} (Năm thứ 6)`;
-
-      const res6 = resultsPerYear ? resultsPerYear[y6] : null;
-      const res5 = resultsPerYear ? resultsPerYear[y5] : null;
+      const isY6Empty = isYearEmpty(2026);
+      const res6 = resultsPerYear ? resultsPerYear[2026] : null;
+      const res5 = resultsPerYear ? resultsPerYear[2025] : null;
       const th = MODEL_THRESHOLDS[currentModel];
 
-      const getM = (id, y) => (currentData[id] && currentData[id][y] !== undefined) ? parseFloat(currentData[id][y]) || 0 : 0;
-      const hasY6Data = res6 && (res6.hasValidData || res6.score > 0);
-
-      // 1. Verdict & Scores
+      const badge = document.getElementById('y6-header-badge');
       const scoreVal = document.getElementById('y6-score-val');
       const deltaVal = document.getElementById('y6-delta-val');
       const deltaText = document.getElementById('y6-delta-text');
@@ -2424,255 +2545,234 @@
       const zoneLabel = document.getElementById('y6-zone-label');
       const safetyMargin = document.getElementById('y6-safety-margin');
 
+      const hasY6Data = !isY6Empty && res6 && (res6.hasValidData || res6.score > 0);
+
       if (!hasY6Data) {
-        if (scoreVal) scoreVal.innerText = '0.00';
+        if (badge) badge.innerText = 'Năm 2026 (Đang để trống)';
+        if (scoreVal) {
+          scoreVal.innerText = '--';
+          scoreVal.className = 'text-4xl sm:text-5xl font-black tracking-tight text-slate-500';
+        }
         if (deltaVal) {
           deltaVal.innerText = '--';
           deltaVal.className = 'text-slate-400 text-sm font-bold';
         }
-        if (deltaText) deltaText.innerText = 'Chưa có số liệu';
+        if (deltaText) deltaText.innerText = 'Đang tính dải 2021-2025';
         if (tag) {
-          tag.className = 'px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-slate-800 text-slate-400 border border-slate-700';
-          tag.innerText = 'CHƯA NHẬP SỐ LIỆU';
+          tag.className = 'px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40';
+          tag.innerText = 'Ô 2026 ĐANG TRỐNG';
         }
-        if (headline) headline.innerHTML = `<span class="text-indigo-300 font-bold">Chưa có số liệu Năm thứ 6 (${y6})</span>`;
-        if (explanation) explanation.innerHTML = `Vui lòng nhập các chỉ tiêu BCTC vào cột Năm thứ 6 trên bảng hoặc form nhập nhanh bên dưới. Bạn có thể bấm nút <b>"Chép từ Năm 5"</b> hoặc <b>"Mẫu: Khả quan (+15%)"</b> để điền nhanh số liệu thử nghiệm.`;
-        if (zoneLabel) zoneLabel.innerText = 'Chưa xác định';
+        if (headline) headline.innerHTML = `<span class="text-amber-400 font-bold">Ô năm 2026 đang trống ➔ Hệ thống đang tính toán dải 2021 - 2025</span>`;
+        if (explanation) explanation.innerHTML = `Do ô số liệu năm 2026 đang để trống, toàn bộ kết quả bảng biểu, đồ thị và chẩn đoán đang <b>hiển thị dải 5 năm: 2021 - 2025</b>. Để kiểm tra tình hình năm 2026 có khả quan không và tự động chuyển sang dải <b>2022 - 2026</b>, hãy nhập số liệu vào cột 2026 hoặc bấm nút tiện ích nhanh bên dưới.`;
+        if (zoneLabel) zoneLabel.innerText = 'Chưa nhập số liệu';
         if (safetyMargin) safetyMargin.innerText = '--';
-      } else {
-        const score6 = res6.score;
-        const score5 = (res5 && res5.score) ? res5.score : 0;
-        const delta = score6 - score5;
 
-        if (scoreVal) {
-          scoreVal.innerText = score6.toFixed(2);
-          if (res6.zone === 'safe') scoreVal.className = 'text-4xl sm:text-5xl font-black tracking-tight text-emerald-400';
-          else if (res6.zone === 'grey') scoreVal.className = 'text-4xl sm:text-5xl font-black tracking-tight text-amber-400';
-          else scoreVal.className = 'text-4xl sm:text-5xl font-black tracking-tight text-rose-400';
+        const compContainer = document.getElementById('y6-pillars-grid');
+        if (compContainer) {
+          compContainer.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-slate-400 italic bg-slate-900/40 rounded-xl border border-dashed border-slate-800">Ô năm 2026 đang để trống. Nhập số liệu vào cột 2026 để bóc tách 5 thành tố X₁ - X₅ và chẩn đoán mức độ khả quan.</div>`;
         }
 
-        if (deltaVal) {
-          const sign = delta >= 0 ? '+' : '';
-          deltaVal.innerText = `${sign}${delta.toFixed(2)} điểm`;
-          if (delta > 0.05) deltaVal.className = 'text-sm sm:text-base font-extrabold text-emerald-400';
-          else if (delta < -0.05) deltaVal.className = 'text-sm sm:text-base font-extrabold text-rose-400';
-          else deltaVal.className = 'text-sm sm:text-base font-extrabold text-slate-300';
+        const advisoryEl = document.getElementById('y6-advisory-text');
+        if (advisoryEl) {
+          advisoryEl.innerHTML = `Hệ thống đang chạy trên dải số liệu 5 năm <b>2021 - 2025</b>. Hãy bấm nút <b>"Chép Năm 5 ➔ Năm 6"</b> hoặc <b>"Mẫu: Khả quan (+15%)"</b> để thử nghiệm kịch bản năm 2026 và chuyển sang dải <b>2022 - 2026</b>.`;
         }
+        return;
+      }
 
-        if (deltaText) {
-          if (delta > 0.05) deltaText.innerText = `Cải thiện so với Năm ${y5}`;
-          else if (delta < -0.05) deltaText.innerText = `Suy giảm so với Năm ${y5}`;
-          else deltaText.innerText = `Ổn định so với Năm ${y5}`;
-        }
+      if (badge) badge.innerText = `Năm 2026 (Đã nhập - Đang tính 2022-2026)`;
+      const score6 = (res6 && res6.score) ? res6.score : 0;
+      const score5 = (res5 && res5.score) ? res5.score : 0;
+      const delta = score6 - score5;
 
-        // Diagnostic Assessment & Explanation
-        if (res6.zone === 'safe') {
-          if (tag) {
-            tag.className = 'px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shadow-xs';
-            tag.innerText = 'TÌNH HÌNH RẤT KHẢ QUAN';
-          }
-          if (headline) {
-            headline.innerHTML = `<span class="text-emerald-400 flex items-center gap-1.5"><i data-lucide="shield-check" class="w-5 h-5"></i> TÌNH HÌNH RẤT KHẢ QUAN - SỨC KHỎE TÀI CHÍNH VỮNG MẠNH</span>`;
-          }
-          if (explanation) {
-            explanation.innerHTML = `Theo số liệu bạn đã nhập cho Năm thứ 6 (${y6}), điểm Z-Score đạt <b>${score6.toFixed(2)}</b> (thuộc <b>Vùng An Toàn &ge; ${th.safe}</b>). Tình hình tài chính của doanh nghiệp được đánh giá là <b>RẤT KHẢ QUAN</b>. ${delta >= 0 ? `Chỉ số Z-Score tăng <b>+${delta.toFixed(2)} điểm</b> so với năm trước (${y5}), tiếp tục nới rộng biên an toàn tài chính.` : `Mặc dù giảm nhẹ <b>${delta.toFixed(2)} điểm</b> so với năm ${y5}, doanh nghiệp vẫn duy trì vị thế an toàn vững chắc.`} Nguy cơ kiệt quệ tài chính hoặc phá sản trong 2 năm tới là rất thấp.`;
-          }
-          if (zoneLabel) zoneLabel.innerHTML = '<span class="text-emerald-400 font-bold">Vùng An Toàn (Safe Zone)</span>';
-          if (safetyMargin) safetyMargin.innerHTML = `<span class="text-emerald-400 font-bold">+${(score6 - th.safe).toFixed(2)} điểm trên ngưỡng an toàn</span>`;
-        } else if (res6.zone === 'grey') {
-          if (tag) {
-            tag.className = 'px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-400/40 shadow-xs';
-            tag.innerText = 'VÙNG XÁM - CẦN THẬN TRỌNG';
-          }
-          if (headline) {
-            headline.innerHTML = `<span class="text-amber-400 flex items-center gap-1.5"><i data-lucide="alert-triangle" class="w-5 h-5"></i> TÌNH HÌNH MỨC ĐỘ TRUNG BÌNH - CẦN THẬN TRỌNG</span>`;
-          }
-          if (explanation) {
-            explanation.innerHTML = `Theo số liệu Năm thứ 6 (${y6}), điểm Z-Score đạt <b>${score6.toFixed(2)}</b>, nằm trong <b>Vùng Xám (${th.distress} - ${th.safe})</b>. Tình hình được đánh giá ở <b>MỨC ĐỘ TRUNG BÌNH / CHƯA THẬT SỰ KHẢ QUAN</b>. Doanh nghiệp chưa rơi vào nguy cơ phá sản trực tiếp nhưng thiếu đi tấm đệm bảo vệ an toàn. ${delta < 0 ? `Điểm số giảm <b>${delta.toFixed(2)} điểm</b> so với năm ${y5}, cho thấy một số rủi ro về chi phí vốn, nợ vay hoặc tăng trưởng doanh thu chậm lại.` : `Điểm số có chuyển biến so với năm ${y5} nhưng vẫn cần cải thiện biên lợi nhuận và giảm bớt phụ thuộc vào nợ.`}`;
-          }
-          if (zoneLabel) zoneLabel.innerHTML = '<span class="text-amber-400 font-bold">Vùng Xám (Grey Zone)</span>';
-          if (safetyMargin) safetyMargin.innerHTML = `<span class="text-amber-300 font-bold">Cách ngưỡng nguy cơ +${(score6 - th.distress).toFixed(2)} điểm</span>`;
+      if (scoreVal) {
+        scoreVal.innerText = score6.toFixed(2);
+        if (res6.zone === 'safe') scoreVal.className = 'text-4xl sm:text-5xl font-black tracking-tight text-emerald-400';
+        else if (res6.zone === 'grey') scoreVal.className = 'text-4xl sm:text-5xl font-black tracking-tight text-amber-400';
+        else scoreVal.className = 'text-4xl sm:text-5xl font-black tracking-tight text-rose-400';
+      }
+
+      if (deltaVal) {
+        const sign = delta >= 0 ? '+' : '';
+        deltaVal.innerText = `${sign}${delta.toFixed(2)} so với 2025`;
+        deltaVal.className = delta >= 0 ? 'text-emerald-400 text-sm font-bold' : 'text-rose-400 text-sm font-bold';
+      }
+      if (deltaText) deltaText.innerText = 'Đang tính dải 2022-2026';
+
+      if (tag) {
+        if (score6 >= th.safe) {
+          tag.className = 'px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+          tag.innerText = 'TÌNH HÌNH RẤT KHẢ QUAN (AN TOÀN)';
+        } else if (score6 >= th.distress) {
+          tag.className = 'px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40';
+          tag.innerText = delta >= 0 ? 'CÓ CHIỀU HƯỚNG KHẢ QUAN (VÙNG XÁM)' : 'CẦN THẬN TRỌNG (VÙNG XÁM)';
         } else {
-          if (tag) {
-            tag.className = 'px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-400/40 shadow-xs';
-            tag.innerText = 'KHÔNG KHẢ QUAN - NGUY CƠ CAO';
-          }
-          if (headline) {
-            headline.innerHTML = `<span class="text-rose-400 flex items-center gap-1.5"><i data-lucide="alert-octagon" class="w-5 h-5"></i> BÁO ĐỘNG ĐỎ: TÌNH HÌNH KHÔNG KHẢ QUAN</span>`;
-          }
-          if (explanation) {
-            explanation.innerHTML = `Cảnh báo: Theo số liệu Năm thứ 6 (${y6}), điểm Z-Score chỉ đạt <b>${score6.toFixed(2)}</b> (dưới ngưỡng nguy cơ ${th.distressDesc}). Tình hình tài chính được đánh giá là <b>KHÔNG KHẢ QUAN / NGUY CƠ PHÁ SẢN CAO</b>. Doanh nghiệp đối mặt với rủi ro kiệt quệ dòng tiền hoặc mất khả năng thanh toán nợ nghiêm trọng. ${delta < 0 ? `Điểm số trượt dốc nghiêm trọng <b>${delta.toFixed(2)} điểm</b> so với năm ${y5}.` : ''} Cần khẩn trương có biện pháp tái cấu trúc tài chính, cơ cấu nợ và cắt giảm chi phí.`;
-          }
-          if (zoneLabel) zoneLabel.innerHTML = '<span class="text-rose-400 font-bold">Vùng Nguy Cơ (Distress Zone)</span>';
-          if (safetyMargin) safetyMargin.innerHTML = `<span class="text-rose-400 font-bold">Âm ${(th.distress - score6).toFixed(2)} điểm dưới ngưỡng nguy cơ</span>`;
+          tag.className = 'px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/40';
+          tag.innerText = 'KHÔNG KHẢ QUAN (NGUY CƠ PHÁ SẢN)';
         }
       }
 
-      // 2. Render 5 Pillars Breakdown
-      const pillarsGrid = document.getElementById('y6-pillars-grid');
-      if (pillarsGrid) {
-        if (!hasY6Data) {
-          pillarsGrid.innerHTML = `
-            <div class="col-span-2 p-4 rounded-xl bg-slate-900/60 border border-white/10 text-center text-xs text-slate-400">
-              Chưa có số liệu để bóc tách 5 thành tố X₁ - X₅ của Năm thứ 6.
-            </div>
-          `;
-        } else {
-          const pillars = [
-            {
-              key: 'x1',
-              code: 'X₁',
-              name: 'Vốn LĐ ròng / TTS',
-              meaning: 'Khả năng thanh toán tức thời',
-              val: res6.x1,
-              weight: currentModel === 'Z' ? 'Trọng số: 1.2' : 'Trọng số: 0.717',
-              status: res6.x1 > 0.2 ? 'safe' : (res6.x1 >= 0 ? 'warning' : 'danger'),
-              desc: res6.x1 > 0.2 ? 'Thanh khoản dồi dào, an toàn' : (res6.x1 >= 0 ? 'Thanh khoản ổn định' : 'Vốn LĐ âm - Rủi ro thanh toán')
-            },
-            {
-              key: 'x2',
-              code: 'X₂',
-              name: 'LN giữ lại / TTS',
-              meaning: 'Tích lũy tài chính tự có',
-              val: res6.x2,
-              weight: currentModel === 'Z' ? 'Trọng số: 1.4' : 'Trọng số: 0.847',
-              status: res6.x2 > 0.2 ? 'safe' : (res6.x2 >= 0 ? 'warning' : 'danger'),
-              desc: res6.x2 > 0.2 ? 'Tích lũy lợi nhuận quá khứ cao' : (res6.x2 >= 0 ? 'Tích lũy mức vừa phải' : 'Lỗ lũy kế ăn mòn tài sản')
-            },
-            {
-              key: 'x3',
-              code: 'X₃',
-              name: 'EBIT / TTS',
-              meaning: 'Hiệu quả sinh lời cốt lõi',
-              val: res6.x3,
-              weight: currentModel === 'Z' ? 'Trọng số: 3.3 (Cực quan trọng)' : 'Trọng số: 3.107',
-              status: res6.x3 > 0.10 ? 'safe' : (res6.x3 >= 0.02 ? 'warning' : 'danger'),
-              desc: res6.x3 > 0.10 ? 'Tỷ suất sinh lời EBIT rất tốt' : (res6.x3 >= 0.02 ? 'Biên sinh lời mỏng' : 'EBIT âm - Hoạt động cốt lõi lỗ')
-            },
-            {
-              key: 'x4',
-              code: 'X₄',
-              name: 'VCSH / Tổng nợ',
-              meaning: 'An toàn đòn bẩy tài chính',
-              val: res6.x4,
-              weight: currentModel === 'Z' ? 'Trọng số: 0.6' : 'Trọng số: 0.420',
-              status: res6.x4 > 1.5 ? 'safe' : (res6.x4 >= 0.8 ? 'warning' : 'danger'),
-              desc: res6.x4 > 1.5 ? 'Đòn bẩy nợ rất an toàn' : (res6.x4 >= 0.8 ? 'Tỷ lệ nợ ở mức chấp nhận được' : 'Lạm dụng nợ vay quá mức')
-            },
-            {
-              key: 'x5',
-              code: 'X₅',
-              name: 'DTT / TTS',
-              meaning: 'Vòng quay & hiệu suất tài sản',
-              val: res6.x5,
-              weight: currentModel === 'Z' ? 'Trọng số: 0.999' : 'Trọng số: 0.998',
-              status: res6.x5 > 1.2 ? 'safe' : (res6.x5 >= 0.7 ? 'warning' : 'danger'),
-              desc: res6.x5 > 1.2 ? 'Khai thác tài sản hiệu quả cao' : (res6.x5 >= 0.7 ? 'Vòng quay trung bình' : 'Tài sản bị ứ đọng, vòng quay chậm')
-            }
-          ];
-
-          pillarsGrid.innerHTML = pillars.map(p => {
-            let borderClass = 'border-emerald-500/40 bg-emerald-950/20';
-            let badgeColor = 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30';
-            let valColor = 'text-emerald-400';
-            if (p.status === 'warning') {
-              borderClass = 'border-amber-500/40 bg-amber-950/20';
-              badgeColor = 'bg-amber-500/20 text-amber-300 border-amber-400/30';
-              valColor = 'text-amber-400';
-            } else if (p.status === 'danger') {
-              borderClass = 'border-rose-500/40 bg-rose-950/20';
-              badgeColor = 'bg-rose-500/20 text-rose-300 border-rose-400/30';
-              valColor = 'text-rose-400';
-            }
-
-            return `
-              <div class="p-2.5 rounded-xl border ${borderClass} flex flex-col justify-between">
-                <div class="flex items-center justify-between gap-1 mb-1">
-                  <span class="text-xs font-bold text-white">${p.code}: ${p.name}</span>
-                  <span class="text-[9px] font-bold px-1.5 py-0.5 rounded border ${badgeColor}">${p.desc}</span>
-                </div>
-                <div class="flex items-baseline justify-between mt-1">
-                  <span class="font-mono text-base font-black ${valColor}">${p.val.toFixed(4)}</span>
-                  <span class="text-[10px] text-slate-400">${p.weight}</span>
-                </div>
-              </div>
-            `;
-          }).join('');
-        }
-      }
-
-      // 3. Advisory Recommendation
-      const advisoryEl = document.getElementById('y6-advisory-text');
-      if (advisoryEl) {
-        if (!hasY6Data) {
-          advisoryEl.innerHTML = 'Nhập số liệu Năm thứ 6 để xem khuyến nghị quản trị dòng tiền & cơ cấu vốn phù hợp.';
-        } else {
-          let recs = [];
-          if (res6.zone === 'safe') {
-            recs.push('<b>✅ Chiến lược đề xuất:</b> Doanh nghiệp có vị thế an toàn cao. Nên tiếp tục duy trì tỷ lệ đòn bẩy VCSH/Nợ ở mức hiện tại, tận dụng uy tín tín dụng tốt để đàm phán lãi suất ưu đãi cho các dự án mở rộng sản xuất kinh doanh.');
-            if (res6.x5 < 1.0) recs.push('<b>Lưu ý tối ưu:</b> Mặc dù an toàn nhưng vòng quay tài sản (X₅) còn dư địa cải thiện, nên tinh gọn hàng tồn kho và đẩy mạnh bán hàng.');
-          } else if (res6.zone === 'grey') {
-            recs.push('<b>⚠️ Chiến lược đề xuất:</b> Cần tập trung kiểm soát chặt chẽ các khoản nợ ngắn hạn đến hạn để tránh căng thẳng thanh khoản. Rà soát lại chính sách công nợ khách hàng để thu hồi tiền mặt nhanh hơn.');
-            if (res6.x3 < 0.08) recs.push('<b>Trọng tâm:</b> Tỷ suất EBIT/TTS đang chịu áp lực, cần tiết giảm chi phí quản lý và chi phí tài chính (lãi vay) để củng cố lại điểm số.');
+      if (headline) {
+        if (score6 >= th.safe) {
+          headline.innerHTML = `<span class="text-emerald-400 font-black">RẤT KHẢ QUAN:</span> Sức khỏe tài chính năm 2026 vững mạnh, nguy cơ phá sản cực thấp!`;
+        } else if (score6 >= th.distress) {
+          if (delta >= 0) {
+            headline.innerHTML = `<span class="text-amber-300 font-bold">CẢI THIỆN TÍCH CỰC:</span> Năm 2026 có bước tiến (+${delta.toFixed(2)} điểm) nhưng vẫn cần theo dõi sát áp lực nợ.`;
           } else {
-            recs.push('<b>🚨 Chiến lược cấp bách:</b> (1) Khẩn cấp đàm phán gia hạn các khoản vay ngắn hạn, tái cấu trúc nợ sang dài hạn để tránh vỡ nợ; (2) Tạm dừng mọi hoạt động đầu tư mua sắm TSCĐ mới; (3) Giải phóng hàng tồn kho và các khoản phải thu để tạo dòng tiền khẩn cấp.');
+            headline.innerHTML = `<span class="text-amber-400 font-bold">CẢNH BÁO SUY GIẢM:</span> Năm 2026 có dấu hiệu suy giảm điểm số, cần tối ưu hóa đòn bẩy.`;
           }
-          advisoryEl.innerHTML = recs.join('<br>');
+        } else {
+          headline.innerHTML = `<span class="text-rose-400 font-black">KHÔNG KHẢ QUAN:</span> Điểm Z-Score năm 2026 rơi vào vùng nguy hiểm, tiềm ẩn nguy cơ mất khả năng thanh toán!`;
         }
       }
 
-      // 4. Render Quick Inputs Grid (9 Fields)
-      const quickGrid = document.getElementById('y6-quick-inputs-grid');
-      if (quickGrid) {
-        quickGrid.innerHTML = METRIC_DEFINITIONS.map(m => {
-          const valY5 = getM(m.id, y5);
-          const valY6 = (currentData[m.id] && currentData[m.id][y6] !== undefined) ? currentData[m.id][y6] : '';
-          
-          let diffText = '';
-          let diffClass = 'text-slate-400';
-          if (valY6 !== '' && valY5 !== 0) {
-            const pct = ((valY6 - valY5) / Math.abs(valY5)) * 100;
-            const sign = pct >= 0 ? '+' : '';
-            diffText = `${sign}${pct.toFixed(1)}%`;
-            if (pct > 0) diffClass = (m.id === 'tnpt' || m.id === 'cplv' || m.id === 'nnh') ? 'text-rose-400' : 'text-emerald-400';
-            else if (pct < 0) diffClass = (m.id === 'tnpt' || m.id === 'cplv' || m.id === 'nnh') ? 'text-emerald-400' : 'text-rose-400';
-          }
-
-          return `
-            <div class="p-3 rounded-xl bg-slate-900/80 border border-white/10 hover:border-indigo-400/50 transition flex flex-col justify-between">
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-xs font-bold text-white">${m.name}</span>
-                <span class="font-mono text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">${m.code}</span>
-              </div>
-              <div class="text-[10px] text-slate-400 mb-1.5 flex items-center justify-between">
-                <span>Năm ${y5}: <b class="text-slate-200">${valY5.toLocaleString('vi-VN')}</b></span>
-                <span id="y6-diff-${m.id}" class="font-bold text-[10px] ${diffClass}">${diffText}</span>
-              </div>
-              <div class="relative">
-                <input 
-                  type="number" 
-                  step="any"
-                  id="y6-quick-${m.id}"
-                  value="${valY6}"
-                  oninput="onY6QuickInputChange('${m.id}', this.value)"
-                  placeholder="0"
-                  class="w-full text-right text-xs font-bold px-3 py-2 border rounded-lg bg-slate-800/90 text-white border-slate-700 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 outline-none transition"
-                >
-              </div>
-            </div>
-          `;
-        }).join('');
+      if (explanation) {
+        explanation.innerHTML = `Theo số liệu bạn đã nhập cho năm 2026, điểm Z-Score đạt <b>${score6.toFixed(2)}</b> (chênh lệch <b>${delta >= 0 ? '+' : ''}${delta.toFixed(2)}</b> so với năm 2025). Hệ thống đã tự động chuyển kết quả bảng biểu và đồ thị sang <b>dải 5 năm 2022 - 2026</b>.`;
       }
 
+      if (zoneLabel) {
+        zoneLabel.innerText = res6.zone === 'safe' ? 'Vùng An Toàn' : (res6.zone === 'grey' ? 'Vùng Cảnh Báo (Xám)' : 'Vùng Nguy Cơ Phá Sản');
+      }
+      if (safetyMargin) {
+        const margin = score6 - th.safe;
+        safetyMargin.innerText = margin >= 0 ? `+${margin.toFixed(2)} (vượt ngưỡng)` : `${margin.toFixed(2)} (dưới ngưỡng)`;
+      }
+
+      renderYear6Components(res6, res5);
+    }
+
+    function renderYear6Components(res6, res5) {
+      const pillarsGrid = document.getElementById('y6-pillars-grid');
+      const advisoryText = document.getElementById('y6-advisory-text');
+      if (!pillarsGrid || !res6) return;
+
+      const comps = [
+        { key: 'x1', code: 'X₁', name: 'Vốn LĐ ròng / TTS', weight: currentModel === 'Z' ? '1.2' : '0.717', safeTarget: '> 0.20' },
+        { key: 'x2', code: 'X₂', name: 'LN giữ lại / TTS', weight: currentModel === 'Z' ? '1.4' : '0.847', safeTarget: '> 0.15' },
+        { key: 'x3', code: 'X₃', name: 'EBIT / TTS', weight: currentModel === 'Z' ? '3.3' : '3.107', safeTarget: '> 0.08' },
+        { key: 'x4', code: 'X₄', name: 'VCSH / Tổng nợ', weight: currentModel === 'Z' ? '0.6' : '0.420', safeTarget: '> 1.00' },
+        { key: 'x5', code: 'X₅', name: 'DTT / TTS', weight: currentModel === 'Z' ? '0.999' : '0.998', safeTarget: '> 0.80' }
+      ];
+
+      pillarsGrid.innerHTML = comps.map(c => {
+        const val6 = res6[c.key] || 0;
+        const val5 = res5 ? (res5[c.key] || 0) : 0;
+        const diff = val6 - val5;
+        const sign = diff >= 0 ? '+' : '';
+        const diffClass = diff >= 0 ? 'text-emerald-400' : 'text-rose-400';
+
+        return `
+          <div class="p-2.5 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="font-mono text-xs font-black text-indigo-300">${c.code}</span>
+                <span class="text-[11px] font-bold text-white">${c.name}</span>
+              </div>
+              <span class="text-[10px] text-slate-400">Hệ số: ×${c.weight} (Chuẩn ${c.safeTarget})</span>
+            </div>
+            <div class="text-right">
+              <span class="font-mono text-sm font-black text-white block">${val6.toFixed(3)}</span>
+              <span class="font-mono text-[10px] font-bold ${diffClass}">${sign}${diff.toFixed(3)} vs 2025</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (advisoryText) {
+        let recs = [];
+        if (res6.zone === 'safe') {
+          recs.push('<b>✅ Tình hình tài chính vững vàng:</b> Doanh nghiệp có cấu trúc an toàn cao trong năm 2026. Nên tiếp tục duy trì tỷ lệ nợ hợp lý và chủ động nắm bắt cơ hội tăng trưởng.');
+          if (res6.x5 < 1.0) recs.push('<b>Gợi ý tối ưu:</b> Hiệu suất quay vòng tài sản (X₅) còn có thể cải thiện hơn nữa bằng cách tinh gọn tồn kho và tối ưu chính sách thanh toán.');
+        } else if (res6.zone === 'grey') {
+          recs.push('<b>⚠️ Cảnh báo thận trọng:</b> Điểm Z-Score năm 2026 nằm trong vùng xám. Cần theo dõi sát thanh khoản ngắn hạn và dòng tiền chi trả lãi vay.');
+          if (res6.x3 < 0.08) recs.push('<b>Trọng tâm:</b> Tỷ suất sinh lời EBIT/TTS đang chịu sức ép, cần rà soát lại chi phí tài chính và cấu trúc chi phí vận hành.');
+        } else {
+          recs.push('<b>🚨 Cảnh báo nguy cơ cao:</b> Điểm số năm 2026 rơi vào vùng nguy hiểm. Cần ưu tiên tối cao cho việc cơ cấu lại các khoản nợ đến hạn và bảo toàn dòng tiền.');
+        }
+        advisoryText.innerHTML = recs.join('<br>');
+      }
+    }
+
+    function renderYear6QuickInputs(skipActive = false) {
+      const quickGrid = document.getElementById('y6-quick-inputs-grid');
+      if (!quickGrid || years.length < 6) return;
+      const y5 = 2025;
+      const y6 = 2026;
+
+      const activeEl = document.activeElement;
+      const isFocusInQuick = activeEl && activeEl.id && activeEl.id.startsWith('y6-quick-');
+
+      if (isFocusInQuick && skipActive) {
+        METRIC_DEFINITIONS.forEach(m => {
+          const valY5 = (currentData[m.id] && currentData[m.id][y5] !== undefined && currentData[m.id][y5] !== '') ? parseFloat(currentData[m.id][y5]) || 0 : 0;
+          const rawY6 = (currentData[m.id] && currentData[m.id][y6] !== undefined) ? currentData[m.id][y6] : '';
+          const diffSpan = document.getElementById(`y6-diff-${m.id}`);
+          if (diffSpan) {
+            if (rawY6 !== '' && valY5 !== 0) {
+              const numY6 = parseFloat(rawY6) || 0;
+              const pct = ((numY6 - valY5) / Math.abs(valY5)) * 100;
+              const sign = pct >= 0 ? '+' : '';
+              diffSpan.innerText = `${sign}${pct.toFixed(1)}%`;
+              diffSpan.className = `font-bold text-[10px] ${(pct > 0 ? ((m.id === 'tnpt' || m.id === 'cplv' || m.id === 'nnh') ? 'text-rose-400' : 'text-emerald-400') : ((m.id === 'tnpt' || m.id === 'cplv' || m.id === 'nnh') ? 'text-emerald-400' : 'text-rose-400'))}`;
+            } else {
+              diffSpan.innerText = '';
+            }
+          }
+        });
+        return;
+      }
+
+      quickGrid.innerHTML = METRIC_DEFINITIONS.map(m => {
+        const valY5 = (currentData[m.id] && currentData[m.id][y5] !== undefined && currentData[m.id][y5] !== '') ? parseFloat(currentData[m.id][y5]) || 0 : 0;
+        const rawY6 = (currentData[m.id] && currentData[m.id][y6] !== undefined) ? currentData[m.id][y6] : '';
+        const valY6 = (rawY6 === '' || rawY6 === null || rawY6 === undefined) ? '' : rawY6;
+
+        let diffText = '';
+        let diffClass = 'text-slate-400';
+        if (valY6 !== '' && valY5 !== 0) {
+          const numY6 = parseFloat(valY6) || 0;
+          const pct = ((numY6 - valY5) / Math.abs(valY5)) * 100;
+          const sign = pct >= 0 ? '+' : '';
+          diffText = `${sign}${pct.toFixed(1)}%`;
+          if (pct > 0) diffClass = (m.id === 'tnpt' || m.id === 'cplv' || m.id === 'nnh') ? 'text-rose-400' : 'text-emerald-400';
+          else if (pct < 0) diffClass = (m.id === 'tnpt' || m.id === 'cplv' || m.id === 'nnh') ? 'text-emerald-400' : 'text-rose-400';
+        }
+
+        return `
+          <div class="p-3 rounded-xl bg-slate-900/80 border border-white/10 hover:border-indigo-400/50 transition flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-white">${m.name}</span>
+              <span class="font-mono text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">${m.code}</span>
+            </div>
+            <div class="text-[10px] text-slate-400 mb-1.5 flex items-center justify-between">
+              <span>Năm ${y5}: <b class="text-slate-200">${valY5.toLocaleString('vi-VN')}</b></span>
+              <span id="y6-diff-${m.id}" class="font-bold text-[10px] ${diffClass}">${diffText}</span>
+            </div>
+            <div class="relative">
+              <input 
+                type="number" 
+                step="any"
+                id="y6-quick-${m.id}"
+                value="${valY6}"
+                oninput="onY6QuickInputChange('${m.id}', this.value)"
+                placeholder="Trống"
+                class="w-full text-right text-xs font-bold px-3 py-2 border rounded-lg bg-slate-800/90 text-white border-slate-700 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 outline-none transition"
+              >
+            </div>
+          </div>
+        `;
+      }).join('');
       if (window.lucide) lucide.createIcons();
     }
 
     function onY6QuickInputChange(metricId, value) {
       if (years.length < 6) return;
-      const y6 = years[5];
-      const num = parseFloat(value) || 0;
+      const y6 = years.includes(2026) ? 2026 : years[years.length - 1];
       if (!currentData[metricId]) currentData[metricId] = {};
-      currentData[metricId][y6] = num;
+      if (value === '' || value === null || value === undefined) {
+        currentData[metricId][y6] = '';
+      } else {
+        currentData[metricId][y6] = parseFloat(value) || 0;
+      }
 
       // Sync input in matrix table if present
       const tableInput = document.getElementById(`input-${metricId}-${y6}`);
@@ -2680,94 +2780,88 @@
         tableInput.value = value;
       }
 
+      updateDynamicYearState();
       calculateAll();
       saveState();
     }
 
     function copyYear5ToYear6() {
-      if (years.length < 6) {
-        addOrToggleYear6();
-        return;
+      if (!years.includes(2026) && years.includes(2025)) {
+        years.push(2026);
+        updateYearInputs();
       }
-      const y5 = years[4];
-      const y6 = years[5];
+      const y5 = 2025;
+      const y6 = 2026;
       METRIC_DEFINITIONS.forEach(m => {
-        const val = (currentData[m.id] && currentData[m.id][y5] !== undefined) ? currentData[m.id][y5] : 0;
+        const val = (currentData[m.id] && currentData[m.id][y5] !== undefined && currentData[m.id][y5] !== '') ? currentData[m.id][y5] : 0;
         if (!currentData[m.id]) currentData[m.id] = {};
         currentData[m.id][y6] = val;
+        const tableInput = document.getElementById(`input-${m.id}-${y6}`);
+        if (tableInput) tableInput.value = val;
+        const qInput = document.getElementById(`y6-quick-${m.id}`);
+        if (qInput) qInput.value = val;
       });
-      renderMatrixBody();
+      updateDynamicYearState();
       calculateAll();
       saveState();
       if (window.lucide) lucide.createIcons();
     }
 
     function applyYear6Scenario(type) {
-      if (years.length < 6) {
-        addOrToggleYear6();
+      if (!years.includes(2026) && years.includes(2025)) {
+        years.push(2026);
+        updateYearInputs();
       }
-      const y5 = years[4];
-      const y6 = years[5];
-      const getM = (id) => (currentData[id] && currentData[id][y5] !== undefined) ? parseFloat(currentData[id][y5]) || 0 : 0;
+      const y5 = 2025;
+      const y6 = 2026;
+      const getM = (id) => (currentData[id] && currentData[id][y5] !== undefined && currentData[id][y5] !== '') ? parseFloat(currentData[id][y5]) || 0 : 0;
 
       if (type === 'growth') {
-        // Kịch bản tăng trưởng khả quan: DT +15%, LNTT +20%, Lãi vay -5%, Nợ vay kiểm soát tốt
-        const dtt = Math.round(getM('dtt') * 1.15);
-        const lntt = Math.round(getM('lntt') * 1.20);
-        const cplv = Math.round(getM('cplv') * 0.95);
-        const tsnh = Math.round(getM('tsnh') * 1.12);
-        const nnh = Math.round(getM('nnh') * 1.05);
-        const tts = Math.round(getM('tts') * 1.10);
-        const lncpp = Math.round(getM('lncpp') + lntt * 0.8);
-        const vhtt = Math.round(getM('vhtt') * 1.20);
-        const tnpt = Math.round(getM('tnpt') * 1.05);
-
-        currentData.dtt[y6] = dtt;
-        currentData.lntt[y6] = lntt;
-        currentData.cplv[y6] = cplv;
-        currentData.tsnh[y6] = tsnh;
-        currentData.nnh[y6] = nnh;
-        currentData.tts[y6] = tts;
-        currentData.lncpp[y6] = lncpp;
-        currentData.vhtt[y6] = vhtt;
-        currentData.tnpt[y6] = tnpt;
+        currentData.dtt[y6] = Math.round(getM('dtt') * 1.15);
+        currentData.lntt[y6] = Math.round(getM('lntt') * 1.20);
+        currentData.cplv[y6] = Math.round(getM('cplv') * 0.95);
+        currentData.tsnh[y6] = Math.round(getM('tsnh') * 1.12);
+        currentData.nnh[y6] = Math.round(getM('nnh') * 1.05);
+        currentData.tts[y6] = Math.round(getM('tts') * 1.10);
+        currentData.lncpp[y6] = Math.round(getM('lncpp') + currentData.lntt[y6] * 0.8);
+        currentData.vhtt[y6] = Math.round(getM('vhtt') * 1.20);
+        currentData.tnpt[y6] = Math.round(getM('tnpt') * 1.05);
       } else if (type === 'stress') {
-        // Kịch bản khó khăn: DT -20%, LNTT -60%, Lãi vay +30%, Nợ +15%
-        const dtt = Math.round(getM('dtt') * 0.80);
-        const lntt = Math.round(getM('lntt') * 0.40);
-        const cplv = Math.round(getM('cplv') * 1.30);
-        const tsnh = Math.round(getM('tsnh') * 0.85);
-        const nnh = Math.round(getM('nnh') * 1.15);
-        const tts = Math.round(getM('tts') * 0.95);
-        const lncpp = Math.round(getM('lncpp') * 0.85);
-        const vhtt = Math.round(getM('vhtt') * 0.70);
-        const tnpt = Math.round(getM('tnpt') * 1.15);
-
-        currentData.dtt[y6] = dtt;
-        currentData.lntt[y6] = lntt;
-        currentData.cplv[y6] = cplv;
-        currentData.tsnh[y6] = tsnh;
-        currentData.nnh[y6] = nnh;
-        currentData.tts[y6] = tts;
-        currentData.lncpp[y6] = lncpp;
-        currentData.vhtt[y6] = vhtt;
-        currentData.tnpt[y6] = tnpt;
+        currentData.dtt[y6] = Math.round(getM('dtt') * 0.80);
+        currentData.lntt[y6] = Math.round(getM('lntt') * 0.40);
+        currentData.cplv[y6] = Math.round(getM('cplv') * 1.30);
+        currentData.tsnh[y6] = Math.round(getM('tsnh') * 0.85);
+        currentData.nnh[y6] = Math.round(getM('nnh') * 1.15);
+        currentData.tts[y6] = Math.round(getM('tts') * 0.95);
+        currentData.lncpp[y6] = Math.round(getM('lncpp') * 0.85);
+        currentData.vhtt[y6] = Math.round(getM('vhtt') * 0.70);
+        currentData.tnpt[y6] = Math.round(getM('tnpt') * 1.15);
       }
 
-      renderMatrixBody();
+      METRIC_DEFINITIONS.forEach(m => {
+        const tableInput = document.getElementById(`input-${m.id}-${y6}`);
+        if (tableInput) tableInput.value = currentData[m.id][y6];
+        const qInput = document.getElementById(`y6-quick-${m.id}`);
+        if (qInput) qInput.value = currentData[m.id][y6];
+      });
+
+      updateDynamicYearState();
       calculateAll();
       saveState();
       if (window.lucide) lucide.createIcons();
     }
 
     function clearYear6Data() {
-      if (years.length < 6) return;
-      const y6 = years[5];
+      const y6 = years.includes(2026) ? 2026 : years[years.length - 1];
       METRIC_DEFINITIONS.forEach(m => {
         if (!currentData[m.id]) currentData[m.id] = {};
-        currentData[m.id][y6] = 0;
+        currentData[m.id][y6] = '';
+        const tableInput = document.getElementById(`input-${m.id}-${y6}`);
+        if (tableInput) tableInput.value = '';
+        const qInput = document.getElementById(`y6-quick-${m.id}`);
+        if (qInput) qInput.value = '';
       });
-      renderMatrixBody();
+      updateDynamicYearState();
       calculateAll();
       saveState();
       if (window.lucide) lucide.createIcons();
@@ -2783,8 +2877,7 @@
       years.push(nextYear);
       copyYear5ToYear6();
       updateYearInputs();
-      updateYearBadge();
-      renderMatrixHeaders();
+      updateDynamicYearState();
       renderMatrixBody();
       calculateAll();
       saveState();
@@ -2807,10 +2900,8 @@
       hideStockFeedback();
 
       updateYearInputs();
-      updateYearBadge();
       initSimUI();
-
-      renderMatrixHeaders();
+      updateDynamicYearState();
       renderMatrixBody();
       updateModelCardStyles();
       calculateAll();
@@ -2826,9 +2917,11 @@
         activeCompany = null;
         updateActiveCompanyBadge();
         hideStockFeedback();
+        updateDynamicYearState();
         renderMatrixBody();
         calculateAll();
         saveState();
+        if (window.lucide) lucide.createIcons();
       }
     }
 
@@ -2862,12 +2955,22 @@
           }
           if (parsed.years && Array.isArray(parsed.years) && parsed.years.length >= 2) {
             years = parsed.years;
-            if (years.length === 5) {
-              const nextY = years[years.length - 1] + 1;
-              years.push(nextY);
+            if (!years.includes(2021) && years.includes(2022)) {
+              years.unshift(2021);
+            }
+            if (!years.includes(2026) && years.includes(2025)) {
+              years.push(2026);
             }
           }
-          if (parsed.currentData) currentData = parsed.currentData;
+          if (parsed.currentData) {
+            currentData = parsed.currentData;
+            METRIC_DEFINITIONS.forEach(m => {
+              if (!currentData[m.id]) currentData[m.id] = {};
+              if ((currentData[m.id][2021] === undefined || currentData[m.id][2021] === null) && PRESET_SAFE.data[m.id] && PRESET_SAFE.data[m.id][2021]) {
+                currentData[m.id][2021] = PRESET_SAFE.data[m.id][2021];
+              }
+            });
+          }
           if (parsed.simConfig) {
             simConfig = { ...simConfig, ...parsed.simConfig };
           }
@@ -3133,14 +3236,28 @@
         }
 
         // 3. Apply extracted data to system
-        years = [...stockResult.years];
+        let stockYears = [...stockResult.years];
+        if (!stockYears.includes(2021) && stockYears.includes(2022)) {
+          stockYears.unshift(2021);
+        }
+        if (!stockYears.includes(2026) && stockYears.includes(2025)) {
+          stockYears.push(2026);
+        }
+        years = stockYears;
         currentData = JSON.parse(JSON.stringify(stockResult.data));
 
-        // If loaded stock has 5 years, automatically append Year 6 ready for forecasting
-        if (years.length === 5) {
-          const nextY = years[years.length - 1] + 1;
-          years.push(nextY);
-        }
+        // Ensure 2026 fields are initialized as empty string for newly searched stock
+        METRIC_DEFINITIONS.forEach(m => {
+          if (!currentData[m.id]) currentData[m.id] = {};
+          years.forEach(yr => {
+            if (currentData[m.id][yr] === undefined) {
+              currentData[m.id][yr] = '';
+            }
+          });
+          if (currentData[m.id][2026] === undefined || currentData[m.id][2026] === 0) {
+            currentData[m.id][2026] = '';
+          }
+        });
 
         // Detect unlisted status
         const matchedDirItem = typeof STOCK_DIRECTORY !== 'undefined' 
@@ -3172,9 +3289,8 @@
 
         // Update UI
         updateYearInputs();
-        updateYearBadge();
         initSimUI();
-        renderMatrixHeaders();
+        updateDynamicYearState();
         renderMatrixBody();
         calculateAll();
         updateActiveCompanyBadge();

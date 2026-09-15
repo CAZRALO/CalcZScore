@@ -68,7 +68,12 @@ module.exports = async (req, res) => {
       return { bsHtml, incHtml, ssiData };
     }
 
-    let { bsHtml, incHtml, ssiData } = await fetchCafeFData(baseYear);
+    const [mainCafeF, prevCafeF] = await Promise.allSettled([
+      fetchCafeFData(baseYear),
+      fetchCafeFData(2021)
+    ]);
+    let { bsHtml, incHtml, ssiData } = (mainCafeF.status === 'fulfilled') ? mainCafeF.value : { bsHtml: '', incHtml: '', ssiData: null };
+    let prevData = (prevCafeF.status === 'fulfilled') ? prevCafeF.value : null;
 
     // Parse SSI info for company name and exchange
     let companyName = (dirEntry && dirEntry.n) || ticker;
@@ -220,6 +225,60 @@ module.exports = async (req, res) => {
     });
 
     // Market cap proxy: use VCSH (Book Value) for Model Z' or scaled equity
+    // If years contains 2022 and missing 2021, extract 2021 from prevData
+    if (years.map(y => parseInt(y, 10)).includes(2022) && !years.map(y => parseInt(y, 10)).includes(2021) && prevData && prevData.bsHtml) {
+      try {
+        const docBs21 = cheerio.load(prevData.bsHtml);
+        const docInc21 = cheerio.load(prevData.incHtml || '');
+        const y21List = parseYears(docBs21);
+        if (y21List.includes('2021')) {
+          const extract21 = (doc, matchCriteria) => {
+            let val = 0;
+            doc('tr').each((_, row) => {
+              const cells = doc(row).find('td, th').map((_, el) => doc(el).text().trim()).get();
+              if (cells.length > y21List.length) {
+                const rowTitle = cells[0].toUpperCase();
+                if (matchCriteria(rowTitle)) {
+                  const idx21 = y21List.indexOf('2021');
+                  if (idx21 !== -1) {
+                    val = cleanVal(cells[idx21 + 1]);
+                  }
+                  return false;
+                }
+              }
+            });
+            return val;
+          };
+
+          const tsnh21  = extract21(docBs21, name => name.includes('TÀI SẢN NGẮN HẠN') && (name.includes('A-') || name.includes('A.') || name.includes('A -')));
+          const tts21   = extract21(docBs21, name => name.includes('TỔNG CỘNG TÀI SẢN') || (name.includes('TỔNG TÀI SẢN') && !name.includes('DÀI HẠN')));
+          const nnh21   = extract21(docBs21, name => name.includes('NỢ NGẮN HẠN') && (name.includes('I.') || name.includes('I -') || name.includes('I-')));
+          const tnpt21  = extract21(docBs21, name => name.includes('NỢ PHẢI TRẢ') && (name.includes('C.') || name.includes('C -') || name.includes('C-') || name.includes('C - NỢ')));
+          const vcsh21  = extract21(docBs21, name => name.includes('VỐN CHỦ SỞ HỮU') && (name.includes('D.') || name.includes('D -') || name.includes('D-') || name.includes('D - VỐN')));
+          const lncpp21 = extract21(docBs21, name => name.includes('CHƯA PHÂN PHỐI') || name.includes('LỢI NHUẬN SAU THUẾ CHƯA PHÂN PHỐI'));
+
+          const dtt21   = extract21(docInc21, name => name.includes('DOANH THU THUẦN VỀ BÁN HÀNG') || name.includes('DOANH THU THUẦN'));
+          const lntt21  = extract21(docInc21, name => name.includes('TỔNG LỢI NHUẬN KẾ TOÁN TRƯỚC THUẾ') || name.includes('LỢI NHUẬN TRƯỚC THUẾ'));
+          const cplv21  = extract21(docInc21, name => name.includes('CHI PHÍ LÃI VAY'));
+
+          if (tts21 > 0 || dtt21 > 0) {
+            years.unshift('2021');
+            tsnh['2021'] = tsnh21;
+            tts['2021'] = tts21;
+            nnh['2021'] = nnh21;
+            tnpt['2021'] = tnpt21 || Math.max(0, tts21 - vcsh21);
+            vcsh['2021'] = vcsh21 || Math.max(0, tts21 - tnpt21);
+            lncpp['2021'] = lncpp21;
+            dtt['2021'] = dtt21;
+            lntt['2021'] = lntt21;
+            cplv['2021'] = cplv21;
+          }
+        }
+      } catch (err21) {
+        console.warn('Could not extract 2021 data:', err21);
+      }
+    }
+
     const vhtt = { ...vcsh };
 
     // Edge cache on Vercel: 24h cache, 12h stale-while-revalidate
