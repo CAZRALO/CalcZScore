@@ -8,14 +8,18 @@ Hệ thống phân tích và dự báo nguy cơ kiệt quệ tài chính / phá 
 
 ## 🌟 Tính Năng Nổi Bật
 
-1. **Liên kết Sàn Chứng Khoán & Tự Động Trích Xuất BCTC (Vercel Serverless API)**:
+1. **Tự Động Phân Loại Doanh Nghiệp Vào Mô Hình Z và Z'' (Auto-Classification Engine)**:
+   - **Nhận diện học thuật thông minh**: Tự động phân loại bất kỳ doanh nghiệp nào dựa trên lĩnh vực hoạt động (Sản xuất vs Phi sản xuất) và tình trạng niêm yết (HOSE/HNX vs UPCoM/Chưa niêm yết).
+   - **Tự động chuyển mô hình**:
+     - 🔵 **Mô hình Z (1968)**: Tự động kích hoạt cho **Doanh nghiệp Sản xuất niêm yết trên HOSE/HNX** (Thép, Hóa chất, Xi măng, Dệt may, Chế biến thực phẩm, Dược phẩm...) với đầy đủ 5 biến số $X_1 - X_5$ và Vốn hóa thị trường.
+     - 🟣 **Mô hình Z'' (1995/2000)**: Tự động kích hoạt cho **Doanh nghiệp Phi sản xuất** (Bán lẻ, Thương mại, Bất động sản, Xây dựng, Dịch vụ, Công nghệ, Logistics...) **hoặc Sàn UPCoM / Doanh nghiệp chưa niêm yết** (loại bỏ biến số $X_5$ vòng quay tài sản và sử dụng Giá trị sổ sách Vốn chủ sở hữu).
+     - 🟠 **Cảnh báo Khối Ngân hàng & Tài chính**: Tự động cảnh báo với nhóm ngân hàng, bảo hiểm, chứng khoán (cấu trúc vốn tiền gửi đặc thù không áp dụng Altman).
+   - **Thanh tìm kiếm & Dropdown gắn nhãn màu sắc**: Hiển thị nhãn mô hình đề xuất và ngành nghề trực quan ngay trên từng dòng gợi ý tìm kiếm.
+   - **Thẻ giải thích lý do theo thời gian thực (Live Rationale Card)**: Minh bạch cơ sở phân loại học thuật và cho phép chuyển đổi linh hoạt giữa chế độ Tự động và Thủ công.
+2. **Liên kết Sàn Chứng Khoán & Tự Động Trích Xuất BCTC (Vercel Serverless API)**:
    - **Thanh tìm kiếm thông minh (Smart Autocomplete)**: Cho phép tìm kiếm bất kỳ doanh nghiệp nào trên 3 sàn **HOSE, HNX, UPCoM** bằng mã chứng khoán (VD: `HPG`, `VNM`, `FPT`, `MWG`...) hoặc tên tiếng Việt có dấu/không dấu (VD: *Hòa Phát, Vinamilk, Thế Giới Di Động, Hóa chất Đức Giang*...).
    - **Serverless Data Engine (`/api/stock`)**: Tự động bóc tách chuẩn xác 9 chỉ tiêu BCTC qua các năm từ cổng thông tin tài chính: Tài sản ngắn hạn, Nợ ngắn hạn, Tổng tài sản, Lợi nhuận chưa phân phối, Tổng nợ phải trả, Vốn chủ sở hữu / Vốn hóa, Doanh thu thuần, LNTT, Chi phí lãi vay.
-   - **Tự động đổ số liệu & Chẩn đoán tức thì**: Điền tự động vào bảng ma trận, đồng bộ dải năm và vẽ lại toàn bộ biểu đồ Z-Score / Z'-Score chỉ sau 1 cú click.
-   - **Cảnh báo thông minh**: Tự động nhận diện các doanh nghiệp thuộc khối Ngân hàng / Bảo hiểm / Tài chính đặc thù (vốn không áp dụng mô hình Altman sản xuất thông thường) và đưa ra khuyến nghị phù hợp.
-2. **Hỗ trợ 2 mô hình học thuật chuẩn Altman**:
-   - **Mô hình Z (1968)**: Dành cho doanh nghiệp sản xuất niêm yết (5 biến số, vốn hóa thị trường).
-   - **Mô hình Z' (1983)**: Dành cho doanh nghiệp tính theo giá trị sổ sách vốn chủ sở hữu (5 biến số).
+   - **Tự động đổ số liệu & Chẩn đoán tức thì**: Điền tự động vào bảng ma trận, đồng bộ dải năm và vẽ lại toàn bộ biểu đồ Z-Score / Z''-Score chỉ sau 1 cú click.
 3. **Tùy biến dải năm phân tích linh hoạt (Custom Year Range)**:
    - Cho phép người dùng **tự do nhập Năm đầu và Năm cuối** (ví dụ: 2019 - 2024, 2020 - 2025,...) thay vì bị cố định.
    - Tự động sinh bảng nhập liệu và biểu đồ tương ứng với số năm được chọn.
@@ -38,17 +42,16 @@ Hệ thống phân tích và dự báo nguy cơ kiệt quệ tài chính / phá 
 6. **Nhập Số Liệu Năm Thứ 6 & Đánh Giá Mức Độ Khả Quan Tài Chính**:
    - **Cột riêng Năm thứ 6 (2026 / Kế hoạch)**: Nằm ngay trên bảng ma trận BCTC, cho phép người dùng tự do nhập 9 chỉ tiêu tài chính để kiểm tra tính khả quan của năm thứ 6.
    - **Khối Đánh Giá Chuyên Sâu**: Trả lời trực diện câu hỏi *"Tình hình Năm thứ 6 có khả quan không?"* với các trạng thái rõ ràng:
-     - 🟢 **RẤT KHẢ QUAN**: $Z \ge 2.99$ / $2.90$ (Sức khỏe tài chính an toàn & vững mạnh).
-     - 🟡 **VÙNG XÁM - CẦN THẬN TRỌNG**: $1.81 \le Z < 2.99$ (Mức độ trung bình, tiềm ẩn rủi ro nếu thị trường đảo chiều).
-     - 🔴 **KHÔNG KHẢ QUAN**: $Z < 1.81$ (Báo động đỏ nguy cơ kiệt quệ tài chính).
+     - 🟢 **RẤT KHẢ QUAN**: $Z \ge 2.99$ / $Z'' \ge 2.60$ (Sức khỏe tài chính an toàn & vững mạnh).
+     - 🟡 **VÙNG XÁM - CẦN THẬN TRỌNG**: $1.81 \le Z < 2.99$ / $1.10 \le Z'' < 2.60$ (Mức độ trung bình, tiềm ẩn rủi ro nếu thị trường đảo chiều).
+     - 🔴 **KHÔNG KHẢ QUAN**: $Z < 1.81$ / $Z'' < 1.10$ (Báo động đỏ nguy cơ kiệt quệ tài chính).
    - **So sánh trực tiếp với Năm thứ 5**: Đo lường mức độ biến thiên điểm số Z-Score, tăng hay giảm bao nhiêu điểm.
-   - **Bóc tách 5 thành tố $X_1 - X_5$**: Phân tích chi tiết thanh khoản ngắn hạn, tích lũy vốn tự có, hiệu quả sinh lời EBIT, đòn bẩy nợ và vòng quay tài sản.
-   - **Bộ công cụ tiện ích**: Phím tắt *Chép từ Năm 5*, *Mẫu: Khả quan (+15%)*, *Mẫu: Khó khăn (-20%)*, *Xóa Năm 6*, cùng Form nhập nhanh 9 chỉ tiêu đồng bộ 2 chiều thời gian thực.
+   - **Bóc tách thành tố**: Phân tích chi tiết thanh khoản ngắn hạn, tích lũy vốn tự có, hiệu quả sinh lời EBIT, đòn bẩy nợ và vòng quay tài sản.
 7. **Chẩn đoán & Nhận định Tài chính Tự Động**:
    - Tự động nhận diện rủi ro: Vốn lưu động ròng âm ($X_1 < 0$), gánh nặng đòn bẩy nợ vay quá lớn ($X_4$ thấp), biên EBIT suy thoái ($X_3 < 0$),...
    - Đưa ra nhận xét xu hướng và khuyến nghị quản trị dòng tiền.
 8. **Dữ liệu mẫu (Preset Demo)**:
-   - Tải nhanh dữ liệu mẫu Doanh nghiệp Tăng trưởng An toàn, Doanh nghiệp Vùng xám và Doanh nghiệp Nguy cơ phá sản cao chỉ bằng 1 cú nhấp chuột (cả 3 bộ mẫu đều sẵn sàng số liệu cho 6 năm liên tiếp).
+   - Tải nhanh dữ liệu mẫu Doanh nghiệp Sản xuất Tăng trưởng An toàn (Z), Doanh nghiệp Dịch vụ / Bán lẻ (Z''), Doanh nghiệp Vùng xám và Doanh nghiệp Nguy cơ phá sản cao chỉ bằng 1 cú nhấp chuột.
 
 ---
 
@@ -60,7 +63,7 @@ $$Z = 1.2 X_1 + 1.4 X_2 + 3.3 X_3 + 0.6 X_4 + 0.999 X_5$$
 - $X_1 = \frac{\text{Tài sản ngắn hạn} - \text{Nợ ngắn hạn}}{\text{Tổng tài sản}}$ (Vốn lưu động ròng / TTS)
 - $X_2 = \frac{\text{Lợi nhuận chưa phân phối}}{\text{Tổng tài sản}}$ (Lợi nhuận giữ lại / TTS)
 - $X_3 = \frac{\text{Lợi nhuận trước thuế} + \text{Chi phí lãi vay}}{\text{Tổng tài sản}}$ (EBIT / TTS)
-- $X_4 = \frac{\text{Vốn hóa thị trường}}{\text{Tổng nợ phải trả}}$
+- $X_4 = \frac{\text{Vốn hóa thị trường}}{\text{Tổng nợ phải trả}}$ (Market Value of Equity / Total Debt)
 - $X_5 = \frac{\text{Doanh thu thuần}}{\text{Tổng tài sản}}$ (Vòng quay tài sản)
 
 **Ngưỡng đánh giá**:
@@ -68,14 +71,15 @@ $$Z = 1.2 X_1 + 1.4 X_2 + 3.3 X_3 + 0.6 X_4 + 0.999 X_5$$
 - $1.81 \le Z < 2.99$: **Vùng xám (Grey Zone)** - Cần theo dõi thêm, có yếu tố rủi ro.
 - $Z < 1.81$: **Vùng nguy hiểm (Distress Zone)** - Nguy cơ kiệt quệ tài chính / vỡ nợ cao.
 
-### 2. Mô hình Z' (1983)
-$$Z' = 0.717 X_1 + 0.847 X_2 + 3.107 X_3 + 0.420 X_4 + 0.998 X_5$$
-*(Trong đó $X_4 = \text{Giá trị sổ sách Vốn chủ sở hữu} / \text{Tổng nợ phải trả}$)*
+### 2. Mô hình Z'' (1995/2000 - Phi sản xuất, Dịch vụ, BĐS & Chưa niêm yết / UPCoM)
+$$Z'' = 6.56 X_1 + 3.26 X_2 + 6.72 X_3 + 1.05 X_4$$
+
+*(Trong đó $X_4 = \text{Giá trị sổ sách Vốn chủ sở hữu} / \text{Tổng nợ phải trả}$; loại bỏ biến $X_5$ vòng quay doanh thu)*
 
 **Ngưỡng đánh giá**:
-- $Z' \ge 2.90$: An toàn
-- $1.23 \le Z' < 2.90$: Vùng xám
-- $Z' < 1.23$: Nguy hiểm
+- $Z'' \ge 2.60$: **Vùng an toàn (Safe Zone)**
+- $1.10 \le Z'' < 2.60$: **Vùng xám (Grey Zone)**
+- $Z'' < 1.10$: **Vùng nguy hiểm (Distress Zone)**
 
 ---
 

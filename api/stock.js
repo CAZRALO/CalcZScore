@@ -1,9 +1,11 @@
 const cheerio = require('cheerio');
 
 let STOCK_DIRECTORY = [];
+let classifyEnterprise = null;
 try {
   const stockDirModule = require('../stock_directory.js');
   STOCK_DIRECTORY = stockDirModule.STOCK_DIRECTORY || [];
+  classifyEnterprise = stockDirModule.classifyEnterprise || null;
 } catch (e) {
   // Directory might not exist or be imported differently
 }
@@ -202,9 +204,11 @@ module.exports = async (req, res) => {
     const hasTTS = Object.values(tts).some(v => v > 0);
 
     if (!hasTSNH || !hasTTS) {
+      const cls = classifyEnterprise ? classifyEnterprise({ symbol: ticker, exchange, companyName }) : null;
       return res.status(422).json({
-        error: `Mã ${ticker} (${companyName}) thuộc khối Ngân hàng / Chứng khoán / Bảo hiểm hoặc tổ chức tài chính đặc thù. Mô hình Altman Z-Score chỉ áp dụng cho doanh nghiệp Sản xuất, Thương mại và Dịch vụ phi tài chính.`,
+        error: `Mã ${ticker} (${companyName}) thuộc khối Ngân hàng / Chứng khoán / Bảo hiểm hoặc tổ chức tài chính đặc thù. Mô hình Altman Z-Score không áp dụng cho cấu trúc bảng cân đối đặc thù của khối tài chính (tiền gửi là nợ chi phối).`,
         isFinancialInstitution: true,
+        classification: cls,
         companyName,
         exchange
       });
@@ -280,6 +284,13 @@ module.exports = async (req, res) => {
     }
 
     const vhtt = { ...vcsh };
+    const industry = (dirEntry && dirEntry.ind) || ssiData?.data?.industryName || '';
+    const classification = classifyEnterprise ? classifyEnterprise({
+      symbol: ticker,
+      exchange,
+      industry,
+      companyName
+    }) : null;
 
     // Edge cache on Vercel: 24h cache, 12h stale-while-revalidate
     res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=43200');
@@ -289,6 +300,8 @@ module.exports = async (req, res) => {
       symbol: ticker,
       companyName,
       exchange,
+      industry,
+      classification,
       isUnlisted: Boolean(isUnlisted),
       currentPrice,
       years: years.map(y => parseInt(y, 10)),

@@ -167,10 +167,147 @@ function searchStockDirectory(keyword) {
     // 3. Khớp tên không dấu
     const nameNoAccent = removeVietnameseAccents(item.n);
     return nameNoAccent.includes(kwNoAccent);
-  }).slice(0, 8); // Lấy tối đa 8 kết quả phù hợp nhất
+  }).slice(0, 10); // Lấy tối đa 10 kết quả phù hợp nhất
 }
 
-// Hỗ trợ cả môi trường Browser và Node.js
+/**
+ * HỆ THỐNG TỰ ĐỘNG PHÂN LOẠI DOANH NGHIỆP VÀO MÔ HÌNH ALTMAN Z VÀ Z''
+ * Chuẩn lý thuyết học thuật Edward Altman:
+ * - Mô hình Z (1968): Doanh nghiệp SẢN XUẤT niêm yết HOSE/HNX (5 biến số X1-X5, Vốn hóa thị trường).
+ * - Mô hình Z'' (1995/2000): Doanh nghiệp PHI SẢN XUẤT (Bán lẻ, Dịch vụ, BĐS, Xây dựng, Công nghệ...) hoặc CHƯA NIÊM YẾT / UPCoM (4 biến số X1-X4, Vốn CSH sổ sách).
+ * - Cảnh báo: Ngân hàng / Bảo hiểm / Chứng khoán không áp dụng mô hình Altman.
+ */
+function classifyEnterprise(input) {
+  if (!input) return null;
+  let symbol = '', exchange = '', industry = '', companyName = '';
+  
+  if (typeof input === 'string') {
+    symbol = input.trim().toUpperCase();
+    const dirItem = STOCK_DIRECTORY.find(x => x.s === symbol);
+    if (dirItem) {
+      exchange = dirItem.e || '';
+      industry = dirItem.ind || '';
+      companyName = dirItem.n || '';
+    }
+  } else if (typeof input === 'object') {
+    symbol = (input.symbol || input.s || '').trim().toUpperCase();
+    exchange = (input.exchange || input.e || '').trim().toUpperCase();
+    industry = (input.industry || input.ind || input.i || '').trim();
+    companyName = (input.companyName || input.name || input.n || '').trim();
+
+    if (symbol && (!industry || !exchange)) {
+      const dirItem = STOCK_DIRECTORY.find(x => x.s === symbol);
+      if (dirItem) {
+        if (!exchange) exchange = dirItem.e || '';
+        if (!industry) industry = dirItem.ind || '';
+        if (!companyName) companyName = dirItem.n || '';
+      }
+    }
+  }
+
+  const combined = `${symbol} ${exchange} ${industry} ${companyName}`.toLowerCase();
+  const combinedNoAccent = removeVietnameseAccents(combined);
+  const indNoAccent = removeVietnameseAccents(industry).toLowerCase();
+  const nameNoAccent = removeVietnameseAccents(companyName).toLowerCase();
+
+  // 1. Nhận diện nhóm Ngân hàng, Chứng khoán, Bảo hiểm, Định chế tài chính
+  const BANK_TICKERS = [
+    'VCB', 'BID', 'CTG', 'TCB', 'MBB', 'ACB', 'VPB', 'STB', 'HDB', 'SHB', 'TPB', 'LPB', 'MSB', 'OCB', 'VIB', 'SSB', 'EIB', 'BAB', 'NAB', 'BVB', 'KLB', 'PGB', 'SGB', 'ABB', 'VAB',
+    'SSI', 'VND', 'HCM', 'VCI', 'SHS', 'MBS', 'CTS', 'BSI', 'FTS', 'AGR', 'VIX', 'ORS', 'TVS', 'APG', 'WSS', 'IVS',
+    'BVH', 'BMI', 'PVI', 'MIG', 'BIC', 'PTI', 'PRE', 'VNR'
+  ];
+
+  const isBankTicker = BANK_TICKERS.includes(symbol);
+  const isBankKeyword = (
+    /ngan hang|chung khoan|bao hiem|tin dung|quan ly quy|bank|securities|insurance/.test(indNoAccent) ||
+    /ngan hang tmcp|ngan hang thuong mai|ctcp chung khoan|cong ty chung khoan|tong cong ty bao hiem|tap doan bao viet/.test(nameNoAccent)
+  );
+
+  if (isBankTicker || isBankKeyword) {
+    return {
+      model: 'INAPPLICABLE',
+      modelName: 'Không Khuyến Nghị Áp Dụng',
+      category: 'financial',
+      categoryLabel: 'Ngân hàng / Bảo hiểm / Tài chính',
+      isManufacturing: false,
+      isListed: exchange === 'HOSE' || exchange === 'HNX',
+      isFinancial: true,
+      reason: 'Cấu trúc tài chính ngân hàng/tổ chức tài chính mang tính đặc thù (tiền gửi huy động là nợ chi phối, không có tài sản/vốn lưu động truyền thống). Chuẩn Altman Z/Z\'\' không áp dụng được, nên dùng mô hình CAMELS hoặc tỷ lệ an toàn vốn CAR (Basel II/III).',
+      badgeClass: 'bg-amber-950 text-amber-300 border-amber-500/50',
+      badgeTag: '⚠️ Ngân Hàng / TC'
+    };
+  }
+
+  // 2. Nhận diện doanh nghiệp UPCoM hoặc Chưa niêm yết
+  const isUnlisted = exchange.includes('UPCOM') || exchange.includes('OTC') || exchange.includes('CHUA') || exchange.includes('UNLISTED');
+  if (isUnlisted) {
+    return {
+      model: 'ZdoublePrime',
+      modelName: "Mô hình Z'' (1995)",
+      category: 'unlisted_upcom',
+      categoryLabel: 'Chưa niêm yết / Sàn UPCoM',
+      isManufacturing: false,
+      isListed: false,
+      isFinancial: false,
+      formula: "Z'' = 6.56·X₁ + 3.26·X₂ + 6.72·X₃ + 1.05·X₄",
+      reason: 'Doanh nghiệp đăng ký giao dịch trên sàn UPCoM hoặc chưa niêm yết tập trung. Theo học thuyết Edward Altman (1995/2000), áp dụng mô hình Z\'\' 4 biến số (X₁ - X₄) sử dụng Giá trị sổ sách Vốn chủ sở hữu thay cho Vốn hóa thị trường.',
+      badgeClass: 'bg-purple-950 text-purple-300 border-purple-500/50',
+      badgeTag: "Z'' (1995)"
+    };
+  }
+
+  // 3. Doanh nghiệp niêm yết HOSE / HNX: Phân biệt Phi sản xuất vs Sản xuất
+  const nonMfgKeywords = [
+    'bat dong san', 'bds', 'dia oc', 'nha o', 'do thi', 'khu cong nghiep', 'kcn', 'trung tam thuong mai',
+    'ban le', 'thuong mai', 'phan phoi', 'ict', 'cong nghe', 'phan mem', 'vien thong', 'tin hoc',
+    'logistics', 'cang bien', 'kho van', 'van tai', 'hang khong', 'tau bien', 'container', 'hang hai',
+    'xay dung', 'thi cong', 'ha tang', 'bot', 'cau duong', 'nen mong', 'xay lap',
+    'dich vu', 'du lich', 'khach san', 'nha hang', 'giai tri', 'truyen thong', 'tu van',
+    'phan phoi xang dau', 'dich vu dau khi', 'khoan dau', 'ky thuat dau khi'
+  ];
+
+  const isNonMfg = nonMfgKeywords.some(kw => combinedNoAccent.includes(kw));
+  if (isNonMfg) {
+    return {
+      model: 'ZdoublePrime',
+      modelName: "Mô hình Z'' (1995)",
+      category: 'non_manufacturing',
+      categoryLabel: 'Phi sản xuất / Dịch vụ / BĐS',
+      isManufacturing: false,
+      isListed: true,
+      isFinancial: false,
+      formula: "Z'' = 6.56·X₁ + 3.26·X₂ + 6.72·X₃ + 1.05·X₄",
+      reason: 'Doanh nghiệp phi sản xuất (Bất động sản, Thương mại, Bán lẻ, Xây dựng, Dịch vụ, Công nghệ, Logistics). Theo chuẩn Edward Altman, loại bỏ biến số X₅ (Vòng quay tài sản) để phản ánh trung thực nguy cơ kiệt quệ tài chính.',
+      badgeClass: 'bg-purple-950 text-purple-300 border-purple-500/50',
+      badgeTag: "Z'' (1995)"
+    };
+  }
+
+  // 4. Mặc định cho doanh nghiệp niêm yết: Sản xuất công nghiệp / Chế biến / Chế tạo
+  return {
+    model: 'Z',
+    modelName: 'Mô hình Z (1968)',
+    category: 'manufacturing_listed',
+    categoryLabel: 'Sản xuất niêm yết',
+    isManufacturing: true,
+    isListed: true,
+    isFinancial: false,
+    formula: 'Z = 1.2·X₁ + 1.4·X₂ + 3.3·X₃ + 0.6·X₄ + 0.999·X₅',
+    reason: 'Doanh nghiệp sản xuất công nghiệp, chế biến, chế tạo đã niêm yết trên HOSE/HNX. Áp dụng chuẩn Altman 1968 với đầy đủ 5 biến số X₁ - X₅ và Vốn hóa thị trường.',
+    badgeClass: 'bg-blue-950 text-blue-300 border-blue-500/50',
+    badgeTag: 'Z (1968)'
+  };
+}
+
+// Gán thông tin phân loại tự động vào từng mục trong danh mục
+STOCK_DIRECTORY.forEach(item => {
+  const cls = classifyEnterprise(item);
+  item.model = cls.model;
+  item.category = cls.category;
+  item.categoryLabel = cls.categoryLabel;
+  item.badgeTag = cls.badgeTag;
+  item.reason = cls.reason;
+});
 
 const PRELOADED_STOCKS = {
   "HPG": {
@@ -2200,6 +2337,24 @@ const PRELOADED_STOCKS = {
   }
 };
 
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { PRELOADED_STOCKS, STOCK_DIRECTORY, searchStockDirectory, removeVietnameseAccents };
+// Hỗ trợ cả môi trường Browser và Node.js
+if (typeof window !== 'undefined') {
+  window.STOCK_DIRECTORY = STOCK_DIRECTORY;
+  window.VIETNAM_STOCK_DIRECTORY = STOCK_DIRECTORY;
+  window.PRELOADED_STOCKS = PRELOADED_STOCKS;
+  window.PRELOADED_STOCKS_DATABASE = PRELOADED_STOCKS;
+  window.classifyEnterprise = classifyEnterprise;
+  window.searchStockDirectory = searchStockDirectory;
+  window.removeVietnameseAccents = removeVietnameseAccents;
 }
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    PRELOADED_STOCKS,
+    STOCK_DIRECTORY,
+    searchStockDirectory,
+    removeVietnameseAccents,
+    classifyEnterprise
+  };
+}
+
