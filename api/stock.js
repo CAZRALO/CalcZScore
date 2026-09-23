@@ -2,10 +2,15 @@ const cheerio = require('cheerio');
 
 let STOCK_DIRECTORY = [];
 let classifyEnterprise = null;
+let searchStockDirectory = null;
+let PRELOADED_STOCKS = {};
+
 try {
   const stockDirModule = require('../stock_directory.js');
   STOCK_DIRECTORY = stockDirModule.STOCK_DIRECTORY || [];
   classifyEnterprise = stockDirModule.classifyEnterprise || null;
+  searchStockDirectory = stockDirModule.searchStockDirectory || null;
+  PRELOADED_STOCKS = stockDirModule.PRELOADED_STOCKS || {};
 } catch (e) {
   // Directory might not exist or be imported differently
 }
@@ -24,14 +29,27 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  const { symbol } = req.query;
-  if (!symbol || typeof symbol !== 'string') {
-    return res.status(400).json({ error: 'Vui lòng cung cấp mã chứng khoán hợp lệ (ví dụ: ?symbol=HPG)' });
+  const queryInput = req.query.symbol || req.query.name || req.query.q || '';
+  if (!queryInput || typeof queryInput !== 'string') {
+    return res.status(400).json({ error: 'Vui lòng cung cấp mã chứng khoán hoặc tên công ty (ví dụ: ?symbol=HPG hoặc ?symbol=Vinamilk)' });
   }
 
-  const ticker = symbol.trim().toUpperCase();
+  let rawInput = queryInput.trim();
+  let ticker = rawInput.toUpperCase();
+
+  // If input is not directly found as a registered ticker in directory, search by company name
+  const isDirectTicker = STOCK_DIRECTORY.some(item => item.s && item.s.toUpperCase() === ticker);
+  if (!isDirectTicker && searchStockDirectory) {
+    const matched = searchStockDirectory(rawInput);
+    if (matched && matched.length > 0) {
+      ticker = matched[0].s.toUpperCase();
+    }
+  }
+
   if (!/^[A-Z0-9]{3,10}$/.test(ticker)) {
-    return res.status(400).json({ error: 'Mã chứng khoán không đúng định dạng.' });
+    return res.status(400).json({
+      error: `Không thể tìm thấy mã chứng khoán phù hợp cho từ khóa: "${rawInput}". Vui lòng thử lại với mã 3 ký tự (ví dụ: HPG, VNM, FPT...).`
+    });
   }
 
   const headers = {
@@ -42,42 +60,37 @@ module.exports = async (req, res) => {
 
   try {
     const currentYear = new Date().getFullYear();
-    let baseYear = currentYear - 1; // Default to last complete fiscal year
 
     // Check pre-registered directory entry
     const dirEntry = STOCK_DIRECTORY.find(item => item.s && item.s.toUpperCase() === ticker);
 
-    // Helper to fetch CafeF + SSI in parallel
-    async function fetchCafeFData(yr) {
-      const [bsRes, incRes, ssiRes] = await Promise.allSettled([
-        fetch(`https://s.cafef.vn/bao-cao-tai-chinh/${ticker}/bsheet/${yr}/0/0/0/bao-cao.chn`, { headers }),
-        fetch(`https://s.cafef.vn/bao-cao-tai-chinh/${ticker}/incsta/${yr}/0/0/0/bao-cao.chn`, { headers }),
-        fetch(`https://iboard-query.ssi.com.vn/stock/${ticker}`, { headers: { 'User-Agent': headers['User-Agent'] } })
-      ]);
+    // Endpoints designed to cover all years from 2015 to 2025:
+    // 2025 -> 2022..2025; 2024 -> 2021..2024; 2021 -> 2018..2021; 2018 -> 2015..2018; 2017 -> 2014..2017
+    const targetYears = [2025, 2024, 2021, 2018, 2017];
 
-      const bsHtml = (bsRes.status === 'fulfilled' && bsRes.value.ok) ? await bsRes.value.text() : '';
-      const incHtml = (incRes.status === 'fulfilled' && incRes.value.ok) ? await incRes.value.text() : '';
-      
-      let ssiData = null;
-      if (ssiRes.status === 'fulfilled' && ssiRes.value.ok) {
-        try {
-          ssiData = await ssiRes.value.json();
-        } catch (e) {
-          // ignore
-        }
+    const [ssiRes, ...cafeFPages] = await Promise.allSettled([
+      fetch(`https://iboard-query.ssi.com.vn/stock/${ticker}`, { headers: { 'User-Agent': headers['User-Agent'] } }),
+      ...targetYears.map(async (yr) => {
+        const [bsRes, incRes] = await Promise.allSettled([
+          fetch(`https://s.cafef.vn/bao-cao-tai-chinh/${ticker}/bsheet/${yr}/0/0/0/bao-cao.chn`, { headers }),
+          fetch(`https://s.cafef.vn/bao-cao-tai-chinh/${ticker}/incsta/${yr}/0/0/0/bao-cao.chn`, { headers })
+        ]);
+        const bsHtml = (bsRes.status === 'fulfilled' && bsRes.value.ok) ? await bsRes.value.text() : '';
+        const incHtml = (incRes.status === 'fulfilled' && incRes.value.ok) ? await incRes.value.text() : '';
+        return { yr, bsHtml, incHtml };
+      })
+    ]);
+
+    let ssiData = null;
+    if (ssiRes.status === 'fulfilled' && ssiRes.value.ok) {
+      try {
+        ssiData = await ssiRes.value.json();
+      } catch (e) {
+        // ignore
       }
-
-      return { bsHtml, incHtml, ssiData };
     }
 
-    const [mainCafeF, prevCafeF] = await Promise.allSettled([
-      fetchCafeFData(baseYear),
-      fetchCafeFData(2021)
-    ]);
-    let { bsHtml, incHtml, ssiData } = (mainCafeF.status === 'fulfilled') ? mainCafeF.value : { bsHtml: '', incHtml: '', ssiData: null };
-    let prevData = (prevCafeF.status === 'fulfilled') ? prevCafeF.value : null;
-
-    // Parse SSI info for company name and exchange
+    // Company identity
     let companyName = (dirEntry && dirEntry.n) || ticker;
     let exchange = (dirEntry && dirEntry.e) || 'HOSE';
     let currentPrice = 0;
@@ -93,73 +106,31 @@ module.exports = async (req, res) => {
     }
 
     let isUnlisted = exchange.includes('UPCOM') || 
-                       exchange.includes('OTC') || 
-                       exchange.includes('CHƯA NIÊM YẾT') ||
-                       (dirEntry && dirEntry.e === 'UPCOM');
+                     exchange.includes('OTC') || 
+                     exchange.includes('CHƯA NIÊM YẾT') ||
+                     (dirEntry && dirEntry.e === 'UPCOM');
 
     if (isUnlisted) {
       exchange = 'UPCOM';
     }
 
-    let $bs = cheerio.load(bsHtml);
-    let $inc = cheerio.load(incHtml);
-
-    // Fallback company name from HTML title if missing
-    if (companyName === ticker) {
-      const pageTitle = $bs('title').text();
-      const match = pageTitle.match(/^(.*?)(?:\s*-\s*Báo cáo tài chính|\s*-\s*CafeF)/i);
-      if (match && match[1].trim()) {
-        companyName = match[1].trim();
-      }
-    }
-
-    // Detect years from table header
+    // Helper to parse detected 4-digit years from table headers
     function parseYears($) {
       let detected = [];
       $('tr').each((_, row) => {
         const texts = $(row).find('td, th').map((_, el) => $(el).text().trim()).get();
-        // Match 4-digit years between 2000 and currentYear
-        const yearCandidates = texts.filter(t => /^\d{4}$/.test(t) && parseInt(t, 10) >= 2000 && parseInt(t, 10) <= currentYear);
+        const yearCandidates = texts.filter(t => /^\d{4}$/.test(t) && parseInt(t, 10) >= 2000 && parseInt(t, 10) <= 2030);
         if (yearCandidates.length >= 2) {
           detected = yearCandidates;
-          return false; // Break
+          return false;
         }
       });
       return detected;
     }
 
-    let years = parseYears($bs);
-    if (years.length === 0) {
-      years = parseYears($inc);
-    }
-
-    // If baseYear didn't have data, try baseYear - 1 (in case latest year not yet submitted)
-    if (years.length === 0 && baseYear > 2020) {
-      baseYear = baseYear - 1;
-      const retry = await fetchCafeFData(baseYear);
-      if (retry.bsHtml) {
-        bsHtml = retry.bsHtml;
-        incHtml = retry.incHtml || incHtml;
-        $bs = cheerio.load(bsHtml);
-        $inc = cheerio.load(incHtml);
-        years = parseYears($bs);
-        if (years.length === 0) years = parseYears($inc);
-      }
-    }
-
-    if (years.length === 0) {
-      return res.status(404).json({
-        error: `Không tìm thấy Báo cáo tài chính cho mã ${ticker}. Doanh nghiệp có thể chưa nộp BCTC theo năm hoặc mã chưa đúng.`
-      });
-    }
-
-    // Sort years ascending: e.g. [2022, 2023, 2024, 2025]
-    years.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
-
     function cleanVal(str) {
       if (!str) return 0;
       let s = str.trim();
-      // Handle negative numbers: e.g. -3.970.123 or (3.970.123)
       const isNegative = s.startsWith('-') || (s.startsWith('(') && s.endsWith(')'));
       s = s.replace(/[^\d.,]/g, '');
       const num = parseFloat(s.replace(/\./g, '').replace(',', '.'));
@@ -168,15 +139,14 @@ module.exports = async (req, res) => {
       return isNegative ? -Math.abs(valInBillions) : valInBillions;
     }
 
-    function extractMetric($, matchCriteria) {
+    function extractMetric($, rowYears, matchCriteria) {
       const result = {};
       $('tr').each((_, row) => {
         const cells = $(row).find('td, th').map((_, el) => $(el).text().trim()).get();
-        if (cells.length > years.length) {
+        if (cells.length > rowYears.length) {
           const rowTitle = cells[0].toUpperCase();
-          const isMatch = matchCriteria(rowTitle);
-          if (isMatch) {
-            years.forEach((yr, idx) => {
+          if (matchCriteria(rowTitle)) {
+            rowYears.forEach((yr, idx) => {
               result[yr] = cleanVal(cells[idx + 1]);
             });
             return false;
@@ -186,104 +156,96 @@ module.exports = async (req, res) => {
       return result;
     }
 
-    // Extract Balance Sheet Metrics
-    const tsnh = extractMetric($bs, name => name.includes('TÀI SẢN NGẮN HẠN') && (name.includes('A-') || name.includes('A.') || name.includes('A -')));
-    const tts  = extractMetric($bs, name => name.includes('TỔNG CỘNG TÀI SẢN') || (name.includes('TỔNG TÀI SẢN') && !name.includes('DÀI HẠN')));
-    const nnh  = extractMetric($bs, name => name.includes('NỢ NGẮN HẠN') && (name.includes('I.') || name.includes('I -') || name.includes('I-')));
-    const tnpt = extractMetric($bs, name => name.includes('NỢ PHẢI TRẢ') && (name.includes('C.') || name.includes('C -') || name.includes('C-') || name.includes('C - NỢ')));
-    const vcsh = extractMetric($bs, name => name.includes('VỐN CHỦ SỞ HỮU') && (name.includes('D.') || name.includes('D -') || name.includes('D-') || name.includes('D - VỐN')));
-    const lncpp = extractMetric($bs, name => name.includes('CHƯA PHÂN PHỐI') || name.includes('LỢI NHUẬN SAU THUẾ CHƯA PHÂN PHỐI'));
+    const merged = {
+      tsnh: {}, nnh: {}, tts: {}, lncpp: {}, lntt: {}, cplv: {}, vhtt: {}, tnpt: {}, dtt: {}
+    };
+    const detectedYearsSet = new Set();
 
-    // Extract Income Statement Metrics
-    const dtt  = extractMetric($inc, name => name.includes('DOANH THU THUẦN VỀ BÁN HÀNG') || name.includes('DOANH THU THUẦN'));
-    const lntt = extractMetric($inc, name => name.includes('TỔNG LỢI NHUẬN KẾ TOÁN TRƯỚC THUẾ') || name.includes('LỢI NHUẬN TRƯỚC THUẾ'));
-    const cplv = extractMetric($inc, name => name.includes('CHI PHÍ LÃI VAY'));
+    for (const item of cafeFPages) {
+      if (item.status !== 'fulfilled' || !item.value) continue;
+      const { bsHtml, incHtml } = item.value;
+      if (!bsHtml && !incHtml) continue;
 
-    // Special check for Banks & Financial Institutions
-    const hasTSNH = Object.values(tsnh).some(v => v > 0);
-    const hasTTS = Object.values(tts).some(v => v > 0);
+      const $bs = cheerio.load(bsHtml || '');
+      const $inc = cheerio.load(incHtml || '');
 
-    if (!hasTSNH || !hasTTS) {
-      const cls = classifyEnterprise ? classifyEnterprise({ symbol: ticker, exchange, companyName }) : null;
-      return res.status(422).json({
-        error: `Mã ${ticker} (${companyName}) thuộc khối Ngân hàng / Chứng khoán / Bảo hiểm hoặc tổ chức tài chính đặc thù. Mô hình Altman Z-Score không áp dụng cho cấu trúc bảng cân đối đặc thù của khối tài chính (tiền gửi là nợ chi phối).`,
-        isFinancialInstitution: true,
-        classification: cls,
-        companyName,
-        exchange
+      // Fallback company name from title if needed
+      if (companyName === ticker && bsHtml) {
+        const pageTitle = $bs('title').text();
+        const match = pageTitle.match(/^(.*?)(?:\s*-\s*Báo cáo tài chính|\s*-\s*CafeF)/i);
+        if (match && match[1].trim()) {
+          companyName = match[1].trim();
+        }
+      }
+
+      let rowYears = parseYears($bs);
+      if (rowYears.length === 0) rowYears = parseYears($inc);
+      if (rowYears.length === 0) continue;
+
+      const tsnh = extractMetric($bs, rowYears, name => name.includes('TÀI SẢN NGẮN HẠN') && (name.includes('A-') || name.includes('A.') || name.includes('A -')));
+      const tts  = extractMetric($bs, rowYears, name => name.includes('TỔNG CỘNG TÀI SẢN') || (name.includes('TỔNG TÀI SẢN') && !name.includes('DÀI HẠN')));
+      const nnh  = extractMetric($bs, rowYears, name => name.includes('NỢ NGẮN HẠN') && (name.includes('I.') || name.includes('I -') || name.includes('I-')));
+      const tnpt = extractMetric($bs, rowYears, name => name.includes('NỢ PHẢI TRẢ') && (name.includes('C.') || name.includes('C -') || name.includes('C-') || name.includes('C - NỢ')));
+      const vcsh = extractMetric($bs, rowYears, name => name.includes('VỐN CHỦ SỞ HỮU') && (name.includes('D.') || name.includes('D -') || name.includes('D-') || name.includes('D - VỐN')));
+      const lncpp = extractMetric($bs, rowYears, name => name.includes('CHƯA PHÂN PHỐI') || name.includes('LỢI NHUẬN SAU THUẾ CHƯA PHÂN PHỐI'));
+
+      const dtt  = extractMetric($inc, rowYears, name => name.includes('DOANH THU THUẦN VỀ BÁN HÀNG') || name.includes('DOANH THU THUẦN'));
+      const lntt = extractMetric($inc, rowYears, name => name.includes('TỔNG LỢI NHUẬN KẾ TOÁN TRƯỚC THUẾ') || name.includes('LỢI NHUẬN TRƯỚC THUẾ'));
+      const cplv = extractMetric($inc, rowYears, name => name.includes('CHI PHÍ LÃI VAY'));
+
+      rowYears.forEach(yrStr => {
+        const y = parseInt(yrStr, 10);
+        if (y >= 2015 && y <= 2025) {
+          detectedYearsSet.add(y);
+          if (tsnh[yrStr] && !merged.tsnh[yrStr]) merged.tsnh[yrStr] = tsnh[yrStr];
+          if (tts[yrStr] && !merged.tts[yrStr])   merged.tts[yrStr]  = tts[yrStr];
+          if (nnh[yrStr] && !merged.nnh[yrStr])   merged.nnh[yrStr]  = nnh[yrStr];
+          if (vcsh[yrStr] && !merged.vhtt[yrStr]) merged.vhtt[yrStr] = vcsh[yrStr];
+          if (tnpt[yrStr] && !merged.tnpt[yrStr]) merged.tnpt[yrStr] = tnpt[yrStr];
+          if (lncpp[yrStr] !== undefined && !merged.lncpp[yrStr]) merged.lncpp[yrStr] = lncpp[yrStr];
+          if (dtt[yrStr] && !merged.dtt[yrStr])   merged.dtt[yrStr]  = dtt[yrStr];
+          if (lntt[yrStr] !== undefined && !merged.lntt[yrStr]) merged.lntt[yrStr] = lntt[yrStr];
+          if (cplv[yrStr] !== undefined && !merged.cplv[yrStr]) merged.cplv[yrStr] = cplv[yrStr];
+        }
       });
     }
 
-    // Balance Sheet Fallbacks & Consistencies
-    years.forEach(yr => {
-      // If TNPT is missing or 0, TNPT = TTS - VCSH
-      if (!tnpt[yr] && tts[yr] && vcsh[yr]) {
-        tnpt[yr] = Math.max(0, tts[yr] - vcsh[yr]);
-      }
-      // If VCSH is missing or 0, VCSH = TTS - TNPT
-      if (!vcsh[yr] && tts[yr] && tnpt[yr]) {
-        vcsh[yr] = Math.max(0, tts[yr] - tnpt[yr]);
-      }
-      if (!lncpp[yr]) lncpp[yr] = 0;
-      if (!cplv[yr]) cplv[yr] = 0;
-    });
-
-    // Market cap proxy: use VCSH (Book Value) for Model Z' or scaled equity
-    // If years contains 2022 and missing 2021, extract 2021 from prevData
-    if (years.map(y => parseInt(y, 10)).includes(2022) && !years.map(y => parseInt(y, 10)).includes(2021) && prevData && prevData.bsHtml) {
-      try {
-        const docBs21 = cheerio.load(prevData.bsHtml);
-        const docInc21 = cheerio.load(prevData.incHtml || '');
-        const y21List = parseYears(docBs21);
-        if (y21List.includes('2021')) {
-          const extract21 = (doc, matchCriteria) => {
-            let val = 0;
-            doc('tr').each((_, row) => {
-              const cells = doc(row).find('td, th').map((_, el) => doc(el).text().trim()).get();
-              if (cells.length > y21List.length) {
-                const rowTitle = cells[0].toUpperCase();
-                if (matchCriteria(rowTitle)) {
-                  const idx21 = y21List.indexOf('2021');
-                  if (idx21 !== -1) {
-                    val = cleanVal(cells[idx21 + 1]);
-                  }
-                  return false;
-                }
+    // Blend preloaded database if available to complete any gaps (e.g., 2015)
+    const preloadedEntry = PRELOADED_STOCKS[ticker];
+    if (preloadedEntry && preloadedEntry.data) {
+      const keys = ['tsnh', 'nnh', 'tts', 'lncpp', 'lntt', 'cplv', 'vhtt', 'tnpt', 'dtt'];
+      keys.forEach(k => {
+        if (preloadedEntry.data[k]) {
+          Object.keys(preloadedEntry.data[k]).forEach(yrStr => {
+            const y = parseInt(yrStr, 10);
+            if (y >= 2015 && y <= 2025) {
+              if (!merged[k][yrStr] || merged[k][yrStr] === 0) {
+                merged[k][yrStr] = preloadedEntry.data[k][yrStr];
+                detectedYearsSet.add(y);
               }
-            });
-            return val;
-          };
-
-          const tsnh21  = extract21(docBs21, name => name.includes('TÀI SẢN NGẮN HẠN') && (name.includes('A-') || name.includes('A.') || name.includes('A -')));
-          const tts21   = extract21(docBs21, name => name.includes('TỔNG CỘNG TÀI SẢN') || (name.includes('TỔNG TÀI SẢN') && !name.includes('DÀI HẠN')));
-          const nnh21   = extract21(docBs21, name => name.includes('NỢ NGẮN HẠN') && (name.includes('I.') || name.includes('I -') || name.includes('I-')));
-          const tnpt21  = extract21(docBs21, name => name.includes('NỢ PHẢI TRẢ') && (name.includes('C.') || name.includes('C -') || name.includes('C-') || name.includes('C - NỢ')));
-          const vcsh21  = extract21(docBs21, name => name.includes('VỐN CHỦ SỞ HỮU') && (name.includes('D.') || name.includes('D -') || name.includes('D-') || name.includes('D - VỐN')));
-          const lncpp21 = extract21(docBs21, name => name.includes('CHƯA PHÂN PHỐI') || name.includes('LỢI NHUẬN SAU THUẾ CHƯA PHÂN PHỐI'));
-
-          const dtt21   = extract21(docInc21, name => name.includes('DOANH THU THUẦN VỀ BÁN HÀNG') || name.includes('DOANH THU THUẦN'));
-          const lntt21  = extract21(docInc21, name => name.includes('TỔNG LỢI NHUẬN KẾ TOÁN TRƯỚC THUẾ') || name.includes('LỢI NHUẬN TRƯỚC THUẾ'));
-          const cplv21  = extract21(docInc21, name => name.includes('CHI PHÍ LÃI VAY'));
-
-          if (tts21 > 0 || dtt21 > 0) {
-            years.unshift('2021');
-            tsnh['2021'] = tsnh21;
-            tts['2021'] = tts21;
-            nnh['2021'] = nnh21;
-            tnpt['2021'] = tnpt21 || Math.max(0, tts21 - vcsh21);
-            vcsh['2021'] = vcsh21 || Math.max(0, tts21 - tnpt21);
-            lncpp['2021'] = lncpp21;
-            dtt['2021'] = dtt21;
-            lntt['2021'] = lntt21;
-            cplv['2021'] = cplv21;
-          }
+            }
+          });
         }
-      } catch (err21) {
-        console.warn('Could not extract 2021 data:', err21);
+      });
+      if (preloadedEntry.companyName && (!companyName || companyName === ticker)) {
+        companyName = preloadedEntry.companyName;
       }
     }
 
-    const vhtt = { ...vcsh };
+    // Determine final list of years
+    let sortedYears = Array.from(detectedYearsSet).sort((a, b) => a - b);
+
+    // If years empty, return 404
+    if (sortedYears.length === 0) {
+      return res.status(404).json({
+        error: `Không tìm thấy Báo cáo tài chính giai đoạn 2015 - 2025 cho mã ${ticker}. Doanh nghiệp có thể chưa nộp BCTC theo năm hoặc mã chưa đúng.`
+      });
+    }
+
+    // Special check for Banks & Financial Institutions
+    const hasTSNH = Object.values(merged.tsnh).some(v => v > 0);
+    const hasTTS = Object.values(merged.tts).some(v => v > 0);
+
     const industry = (dirEntry && dirEntry.ind) || ssiData?.data?.industryName || '';
     const classification = classifyEnterprise ? classifyEnterprise({
       symbol: ticker,
@@ -291,6 +253,39 @@ module.exports = async (req, res) => {
       industry,
       companyName
     }) : null;
+
+    if (!hasTSNH || !hasTTS || (classification && classification.isFinancial)) {
+      return res.status(422).json({
+        error: `Mã ${ticker} (${companyName}) thuộc khối Ngân hàng / Chứng khoán / Bảo hiểm hoặc tổ chức tài chính đặc thù. Mô hình Altman Z-Score không áp dụng cho cấu trúc bảng cân đối đặc thù của khối tài chính (tiền gửi là nợ chi phối).`,
+        isFinancialInstitution: true,
+        classification,
+        companyName,
+        exchange
+      });
+    }
+
+    // Balance Sheet Fallbacks & Consistencies
+    sortedYears.forEach(y => {
+      const yr = String(y);
+      if (!merged.tts[yr]) {
+        // Look for neighbor year
+        const prev = String(y - 1);
+        const next = String(y + 1);
+        merged.tts[yr] = merged.tts[prev] || merged.tts[next] || 0;
+      }
+      if (!merged.tnpt[yr] && merged.tts[yr] && merged.vhtt[yr]) {
+        merged.tnpt[yr] = Math.max(0, merged.tts[yr] - merged.vhtt[yr]);
+      }
+      if (!merged.vhtt[yr] && merged.tts[yr] && merged.tnpt[yr]) {
+        merged.vhtt[yr] = Math.max(0, merged.tts[yr] - merged.tnpt[yr]);
+      }
+      if (merged.lncpp[yr] === undefined) merged.lncpp[yr] = 0;
+      if (merged.cplv[yr] === undefined) merged.cplv[yr] = 0;
+      if (merged.dtt[yr] === undefined) merged.dtt[yr] = 0;
+      if (merged.lntt[yr] === undefined) merged.lntt[yr] = 0;
+      if (merged.tsnh[yr] === undefined) merged.tsnh[yr] = 0;
+      if (merged.nnh[yr] === undefined) merged.nnh[yr] = 0;
+    });
 
     // Edge cache on Vercel: 24h cache, 12h stale-while-revalidate
     res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=43200');
@@ -304,25 +299,15 @@ module.exports = async (req, res) => {
       classification,
       isUnlisted: Boolean(isUnlisted),
       currentPrice,
-      years: years.map(y => parseInt(y, 10)),
+      years: sortedYears,
       unit: 'tỷ VNĐ',
-      data: {
-        tsnh,
-        nnh,
-        tts,
-        lncpp,
-        lntt,
-        cplv,
-        vhtt,
-        tnpt,
-        dtt
-      }
+      data: merged
     });
 
   } catch (err) {
     console.error(`Error fetching financials for ${ticker}:`, err);
     return res.status(500).json({
-      error: `Đã xảy ra lỗi khi trích xuất số liệu BCTC cho mã ${ticker}: ${err.message}`
+      error: `Đã xảy ra lỗi khi trích xuất số liệu BCTC giai đoạn 2015 - 2025 cho mã ${ticker}: ${err.message}`
     });
   }
 };

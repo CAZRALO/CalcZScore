@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Phân Tích Sức Khỏe Tài Chính & Điểm Số Altman Z-Score & Z''-Score | Mô Hình Hóa Confusion Matrix</title>
-  <meta name="description" content="Công cụ tính toán và trực quan hóa chỉ số cảnh báo nguy cơ phá sản Altman Z-Score (1968) và Z''-Score (1995) kết hợp mô hình hóa giả định Confusion Matrix cho doanh nghiệp giai đoạn 2021 - 2025 với biểu đồ cột kết hợp đường.">
+  <meta name="description" content="Công cụ tính toán và trực quan hóa chỉ số cảnh báo nguy cơ phá sản Altman Z-Score (1968) và Z''-Score (1995) kết hợp mô hình hóa giả định Confusion Matrix cho doanh nghiệp giai đoạn 2015 - 2025 với biểu đồ cột kết hợp đường.">
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -208,11 +208,11 @@
     <div class="text-xs font-bold uppercase tracking-widest text-slate-600 mb-0.5">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
     <div class="text-xs font-semibold text-slate-500 mb-3">Độc lập - Tự do - Hạnh phúc</div>
     <div class="text-xl font-black uppercase tracking-tight text-slate-900 mb-1">BÁO CÁO THẨM ĐỊNH SỨC KHỎE TÀI CHÍNH & XẾP HẠNG TÍN NHIỆM DOANH NGHIỆP</div>
-    <div class="text-xs font-semibold text-slate-700 mb-3">Mô hình Altman Z-Score & Z''-Score kết hợp Ma Trận Nhầm Lẫn (Confusion Matrix) 2021 - 2025</div>
+    <div class="text-xs font-semibold text-slate-700 mb-3">Mô hình Altman Z-Score & Z''-Score kết hợp Ma Trận Nhầm Lẫn (Confusion Matrix) 2015 - 2025</div>
     <div class="text-xs text-slate-600 flex justify-center gap-6 border-t border-slate-200 pt-2">
       <span>Đơn vị được thẩm định: <b id="print-company-name">Công ty Cổ phần Tập đoàn Hòa Phát</b></span>
       <span>Mã số: <b id="print-tax-code">HOSE: HPG / MST: 0900189284</b></span>
-      <span>Kỳ thẩm định: <b>2021 - 2025</b></span>
+      <span>Kỳ thẩm định: <b>2015 - 2025 (11 năm)</b></span>
       <span>Ngày lập: <b id="print-date">15/09/2026</b></span>
     </div>
   </div>
@@ -227,7 +227,7 @@
         </a>
         <a href="#sec-matrix" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-indigo-600 transition flex items-center gap-1.5 whitespace-nowrap">
           <i data-lucide="table" class="w-3.5 h-3.5 text-slate-500"></i>
-          <span>2. BCTC TT200 (2021-2025)</span>
+          <span>2. BCTC TT200 (2015-2025)</span>
         </a>
         <a href="#sec-score" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-indigo-600 transition flex items-center gap-1.5 whitespace-nowrap">
           <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-slate-500"></i>
@@ -361,7 +361,7 @@
             class="flex-1 px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 bg-white text-indigo-700 shadow-sm border border-indigo-100"
           >
             <i data-lucide="edit-3" class="w-4 h-4 text-indigo-600"></i>
-            <span>1. Doanh Nghiệp Tự Nhập Liệu Riêng (2021 - 2025)</span>
+            <span>1. Doanh Nghiệp Tự Nhập Liệu Riêng (2015 - 2025)</span>
             <span class="bg-indigo-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-extrabold">Đề xuất</span>
           </button>
           <button 
@@ -398,14 +398,14 @@
                 <i data-lucide="file-check-2" class="w-3.5 h-3.5 text-indigo-400"></i>
                 CHẾ ĐỘ TỰ NHẬP BÁO CÁO TÀI CHÍNH DOANH NGHIỆP
               </span>
-              <span class="text-[11px] font-medium text-slate-400">Dữ liệu chuẩn: 2021 - 2025</span>
+              <span class="text-[11px] font-medium text-slate-400">Dữ liệu chuẩn: 2015 - 2025</span>
             </div>
             <h2 class="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
               <i data-lucide="clipboard-edit" class="w-5 h-5 text-indigo-400"></i>
               Doanh Nghiệp Tự Nhập Số Liệu & Tự Phân Loại Công Thức Z Hay Z''
             </h2>
             <p class="text-xs text-slate-300 mt-1 max-w-3xl leading-relaxed">
-              Khi ở chế độ tự nhập liệu, doanh nghiệp tự điền 9 chỉ tiêu BCTC giai đoạn 2021 - 2025 vào bảng ma trận bên dưới. Sử dụng bảng hướng dẫn và trợ lý phân loại bên dưới để quyết định chọn dùng <b>Công thức Z (1968)</b> hay <b>Công thức Z'' (1995)</b>.
+              Khi ở chế độ tự nhập liệu, doanh nghiệp tự điền 9 chỉ tiêu BCTC giai đoạn 2015 - 2025 vào bảng ma trận bên dưới. Sử dụng bảng hướng dẫn và trợ lý phân loại bên dưới để quyết định chọn dùng <b>Công thức Z (1968)</b> hay <b>Công thức Z'' (1995)</b>.
             </p>
           </div>
 
@@ -508,7 +508,7 @@
               Tra Cứu & Tự Động Nạp Báo Cáo Tài Chính Doanh Nghiệp
             </h2>
             <p class="text-xs text-slate-300 mt-1 max-w-2xl">
-              Nhập mã cổ phiếu hoặc tên công ty để hệ thống tự động bóc tách đủ 9 chỉ tiêu BCTC qua các năm gần nhất và tính toán điểm số Altman Z-Score tức thì.
+              Nhập mã cổ phiếu hoặc tên công ty để hệ thống tự động khai thác trọn bộ 9 chỉ tiêu BCTC từ năm <b>2015 đến 2025 (11 năm)</b> và tính toán điểm số Altman Z-Score tức thì.
             </p>
           </div>
 
@@ -716,7 +716,7 @@
               <i data-lucide="calendar-range" class="w-3.5 h-3.5 text-indigo-600"></i>
               Cấu Hình Dải Năm
             </span>
-            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700" id="years-count-badge">5 năm (2021 - 2025)</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700" id="years-count-badge">11 năm (2015 - 2025)</span>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2.5">
             <div>
@@ -724,7 +724,7 @@
               <input 
                 type="number" 
                 id="input-start-year" 
-                value="2021" 
+                value="2015" 
                 min="1980" 
                 max="2099" 
                 step="1" 
@@ -1239,7 +1239,7 @@
           </div>
           <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
             <i data-lucide="table-properties" class="w-5 h-5 text-indigo-600"></i>
-            Số Liệu Báo Cáo Tài Chính 2021 - 2025 Có Mã Số Kế Toán
+            Số Liệu Báo Cáo Tài Chính 2015 - 2025 Có Mã Số Kế Toán
           </h2>
           <p class="text-xs text-slate-500 mt-0.5">Nhập 9 chỉ tiêu cốt lõi theo từng năm. Hệ thống tự động tính toán X₁ - X₅, Điểm Z-Score và kiểm tra tính cân đối số liệu.</p>
         </div>
@@ -1550,7 +1550,7 @@
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                 <i data-lucide="sliders" class="w-4 h-4 text-indigo-600"></i>
-                Trạng Thái Thực Tế (2021 - 2025)
+                Trạng Thái Thực Tế (2015 - 2025)
               </span>
               <span class="text-[10px] text-slate-400 font-medium">Bấm để thay đổi</span>
             </div>
@@ -1559,12 +1559,12 @@
             </p>
 
             <div class="space-y-2" id="matrix-actual-state-list">
-              <!-- Dynamically populated via JS for each year 2021 - 2025 -->
+              <!-- Dynamically populated via JS for each year 2015 - 2025 -->
             </div>
           </div>
 
           <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-            <span>Dữ liệu: <b>5 năm tài chính</b></span>
+            <span>Dữ liệu: <b id="matrix-years-count-text">11 năm tài chính</b></span>
             <span class="font-semibold text-indigo-600">Tự động đồng bộ</span>
           </div>
         </div>
@@ -1664,9 +1664,9 @@
         <div class="lg:col-span-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between space-y-3">
           <div>
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5" id="quadrant-chart-title">
                 <i data-lucide="crosshair" class="w-4 h-4 text-indigo-600"></i>
-                Bản Đồ Tọa Độ Rủi Ro (2021 ➔ 2025)
+                Bản Đồ Tọa Độ Rủi Ro (2015 ➔ 2025)
               </span>
             </div>
             <p class="text-[11px] text-slate-500 mb-2">
@@ -1787,7 +1787,7 @@
             <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i>
             Tóm Tắt Báo Cáo Gửi Giám Đốc Tài Chính (CFO Briefing Memo)
           </h4>
-          <span class="text-[11px] text-slate-400">Trích xuất tự động từ số liệu BCTC 2021 - 2025</span>
+          <span class="text-[11px] text-slate-400">Trích xuất tự động từ số liệu BCTC 2015 - 2025</span>
         </div>
         <div id="report-executive-summary" class="text-xs text-slate-200 leading-relaxed space-y-2 pt-1">
           <!-- Populated dynamically via renderExecutiveReport() -->
@@ -1889,7 +1889,7 @@
     let currentModel = 'Z'; // 'Z', 'ZdoublePrime'
     let autoClassifyEnabled = true; // Auto-classification into Z vs Z''
     let currentClassification = null;
-    let years = [2021, 2022, 2023, 2024, 2025];
+    let years = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
     let unitMultiplier = 1; // 1: billion, 0.001, etc.
     let appMode = 'manual'; // 'manual' (default) or 'search'
     let zscoreChartInstance = null;
@@ -1908,6 +1908,12 @@
 
     // Actual real-world states for Confusion Matrix (solvent vs distress)
     let actualYearStates = {
+      2015: 'solvent',
+      2016: 'solvent',
+      2017: 'solvent',
+      2018: 'solvent',
+      2019: 'solvent',
+      2020: 'solvent',
       2021: 'solvent',
       2022: 'solvent',
       2023: 'solvent',
@@ -1976,72 +1982,72 @@
       { id: 'dtt',  name: 'Doanh thu thuần', code: 'DTT', vasCode: 'Mã 10', desc: "Doanh thu thuần bán hàng & CCDV (Z dùng, Z'' loại trừ)", requiredFor: ['Z'] }
     ];
 
-    // PRESET DEMO DATA (In Billions VND) - Standardized 2021 - 2025
+    // PRESET DEMO DATA (In Billions VND) - Standardized 2015 - 2025
     // 1. Safe Manufacturing (Model Z)
     const PRESET_SAFE = {
       model: 'Z',
-      years: [2021, 2022, 2023, 2024, 2025],
-      data: {
-        tsnh:  { 2021: 15400, 2022: 17800, 2023: 21500, 2024: 25200, 2025: 29800 },
-        nnh:   { 2021: 6200,  2022: 7100,  2023: 8400,  2024: 9300,  2025: 10500 },
-        tts:   { 2021: 28000, 2022: 32500, 2023: 38000, 2024: 43500, 2025: 50000 },
-        lncpp: { 2021: 7200,  2022: 8900,  2023: 11200, 2024: 13800, 2025: 17000 },
-        lntt:  { 2021: 3800,  2022: 4400,  2023: 5200,  2024: 6100,  2025: 7300 },
-        cplv:  { 2021: 450,   2022: 480,   2023: 510,   2024: 530,   2025: 560 },
-        vhtt:  { 2021: 42000, 2022: 46000, 2023: 54000, 2024: 62000, 2025: 75000 },
-        tnpt:  { 2021: 9500,  2022: 10800, 2023: 12500, 2024: 13900, 2025: 15600 },
-        dtt:   { 2021: 31000, 2022: 36500, 2023: 42800, 2024: 49200, 2025: 58000 }
+      years: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
+      data: (typeof PRELOADED_STOCKS !== 'undefined' && PRELOADED_STOCKS.HPG && PRELOADED_STOCKS.HPG.data) ? JSON.parse(JSON.stringify(PRELOADED_STOCKS.HPG.data)) : {
+        tsnh:  { 2015: 12385, 2016: 14200, 2017: 21540, 2018: 31200, 2019: 38500, 2020: 54300, 2021: 83500, 2022: 78900, 2023: 84600, 2024: 92400, 2025: 104500 },
+        nnh:   { 2015: 6944, 2016: 8200, 2017: 12400, 2018: 18500, 2019: 25400, 2020: 38200, 2021: 58200, 2022: 54100, 2023: 56800, 2024: 61500, 2025: 68200 },
+        tts:   { 2015: 25552, 2016: 33227, 2017: 53022, 2018: 78223, 2019: 101776, 2020: 131511, 2021: 178236, 2022: 170336, 2023: 187783, 2024: 224490, 2025: 257899 },
+        lncpp: { 2015: 6550, 2016: 8900, 2017: 12500, 2018: 17200, 2019: 21400, 2020: 29800, 2021: 42500, 2022: 36200, 2023: 38900, 2024: 45200, 2025: 52400 },
+        lntt:  { 2015: 3971, 2016: 7702, 2017: 9288, 2018: 10071, 2019: 9097, 2020: 15357, 2021: 37057, 2022: 9923, 2023: 7793, 2024: 13694, 2025: 18041 },
+        cplv:  { 2015: 279, 2016: 340, 2017: 512, 2018: 890, 2019: 1250, 2020: 2150, 2021: 2540, 2022: 3084, 2023: 3587, 2024: 2850, 2025: 2950 },
+        vhtt:  { 2015: 16768, 2016: 22400, 2017: 35600, 2018: 48900, 2019: 58200, 2020: 74500, 2021: 96800, 2022: 89500, 2023: 98200, 2024: 115000, 2025: 132000 },
+        tnpt:  { 2015: 8784, 2016: 10827, 2017: 17422, 2018: 29323, 2019: 43576, 2020: 57011, 2021: 81436, 2022: 80836, 2023: 89583, 2024: 109490, 2025: 125899 },
+        dtt:   { 2015: 27453, 2016: 33283, 2017: 46162, 2018: 55836, 2019: 63658, 2020: 90119, 2021: 149680, 2022: 141409, 2023: 118953, 2024: 138855, 2025: 156116 }
       }
     };
 
     // 2. Safe Service / Trade / Non-manufacturing (Model Z'' - 4 variables)
     const PRESET_SERVICE_ZDOUBLEPRIME = {
       model: 'ZdoublePrime',
-      years: [2021, 2022, 2023, 2024, 2025],
-      data: {
-        tsnh:  { 2021: 18000, 2022: 21500, 2023: 26000, 2024: 31000, 2025: 38000 },
-        nnh:   { 2021: 8500,  2022: 9800,  2023: 11500, 2024: 13200, 2025: 15000 },
-        tts:   { 2021: 25000, 2022: 30000, 2023: 36000, 2024: 43000, 2025: 52000 },
-        lncpp: { 2021: 5200,  2022: 6800,  2023: 8900,  2024: 11500, 2025: 14800 },
-        lntt:  { 2021: 2900,  2022: 3600,  2023: 4500,  2024: 5600,  2025: 7100 },
-        cplv:  { 2021: 320,   2022: 350,   2023: 380,   2024: 410,   2025: 440 },
-        vhtt:  { 2021: 14000, 2022: 17500, 2023: 21500, 2024: 26500, 2025: 33000 },
-        tnpt:  { 2021: 11000, 2022: 12500, 2023: 14500, 2024: 16500, 2025: 19000 },
-        dtt:   { 2021: 22000, 2022: 27000, 2023: 33000, 2024: 40000, 2025: 48000 }
+      years: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
+      data: (typeof PRELOADED_STOCKS !== 'undefined' && PRELOADED_STOCKS.VGI && PRELOADED_STOCKS.VGI.data) ? JSON.parse(JSON.stringify(PRELOADED_STOCKS.VGI.data)) : {
+        tsnh:  { 2015: 11200, 2016: 13500, 2017: 15800, 2018: 18200, 2019: 21500, 2020: 24800, 2021: 27958, 2022: 24209, 2023: 28405, 2024: 37956, 2025: 52187 },
+        nnh:   { 2015: 8400, 2016: 10200, 2017: 12100, 2018: 14500, 2019: 16800, 2020: 18900, 2021: 18567, 2022: 16892, 2023: 17290, 2024: 24108, 2025: 35129 },
+        tts:   { 2015: 26800, 2016: 46826, 2017: 51967, 2018: 57869, 2019: 60869, 2020: 59004, 2021: 52851, 2022: 50303, 2023: 52464, 2024: 63439, 2025: 81511 },
+        lncpp: { 2015: 1200, 2016: 1500, 2017: 1800, 2018: 2100, 2019: 2500, 2020: 2900, 2021: 3412, 2022: 3820, 2023: 4250, 2024: 4890, 2025: 5620 },
+        lntt:  { 2015: 950, 2016: 1200, 2017: 1500, 2018: 1800, 2019: 2150, 2020: 2600, 2021: 3120, 2022: 3890, 2023: 4560, 2024: 5820, 2025: 7450 },
+        cplv:  { 2015: 380, 2016: 410, 2017: 430, 2018: 450, 2019: 470, 2020: 480, 2021: 490, 2022: 480, 2023: 460, 2024: 440, 2025: 420 },
+        vhtt:  { 2015: 12400, 2016: 19800, 2017: 23500, 2018: 27100, 2019: 29800, 2020: 28400, 2021: 27902, 2022: 28105, 2023: 29450, 2024: 32890, 2025: 38450 },
+        tnpt:  { 2015: 14400, 2016: 27026, 2017: 28467, 2018: 30769, 2019: 31069, 2020: 30604, 2021: 24949, 2022: 22198, 2023: 23014, 2024: 30549, 2025: 43061 },
+        dtt:   { 2015: 13500, 2016: 14800, 2017: 16200, 2018: 17900, 2019: 19800, 2020: 21500, 2021: 23500, 2022: 25400, 2023: 27800, 2024: 31200, 2025: 35800 }
       }
     };
 
     // 3. Warning / Grey Zone (Fluctuating, Higher Debt)
     const PRESET_WARNING = {
       model: 'Z',
-      years: [2021, 2022, 2023, 2024, 2025],
+      years: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
       data: {
-        tsnh:  { 2021: 12000, 2022: 12500, 2023: 13100, 2024: 13800, 2025: 14200 },
-        nnh:   { 2021: 9500,  2022: 10400, 2023: 11500, 2024: 12200, 2025: 13100 },
-        tts:   { 2021: 24000, 2022: 25500, 2023: 27000, 2024: 28200, 2025: 29500 },
-        lncpp: { 2021: 2200,  2022: 2400,  2023: 2300,  2024: 2500,  2025: 2600 },
-        lntt:  { 2021: 1500,  2022: 1400,  2023: 1250,  2024: 1350,  2025: 1450 },
-        cplv:  { 2021: 980,   2022: 1100,  2023: 1250,  2024: 1300,  2025: 1320 },
-        vhtt:  { 2021: 18000, 2022: 16500, 2023: 15000, 2024: 16200, 2025: 17000 },
-        tnpt:  { 2021: 15000, 2022: 16800, 2023: 18500, 2024: 19200, 2025: 20400 },
-        dtt:   { 2021: 20500, 2022: 21800, 2023: 22400, 2024: 23500, 2025: 24200 }
+        tsnh:  { 2015: 8500, 2016: 9200, 2017: 10100, 2018: 11200, 2019: 11800, 2020: 12100, 2021: 12000, 2022: 12500, 2023: 13100, 2024: 13800, 2025: 14200 },
+        nnh:   { 2015: 6800, 2016: 7400, 2017: 8100, 2018: 8900, 2019: 9300, 2020: 9500, 2021: 9500,  2022: 10400, 2023: 11500, 2024: 12200, 2025: 13100 },
+        tts:   { 2015: 17500, 2016: 18800, 2017: 20200, 2018: 21800, 2019: 22900, 2020: 23500, 2021: 24000, 2022: 25500, 2023: 27000, 2024: 28200, 2025: 29500 },
+        lncpp: { 2015: 1500, 2016: 1700, 2017: 1900, 2018: 2050, 2019: 2100, 2020: 2150, 2021: 2200,  2022: 2400,  2023: 2300,  2024: 2500,  2025: 2600 },
+        lntt:  { 2015: 1100, 2016: 1250, 2017: 1380, 2018: 1450, 2019: 1480, 2020: 1500, 2021: 1500,  2022: 1400,  2023: 1250,  2024: 1350,  2025: 1450 },
+        cplv:  { 2015: 650, 2016: 720, 2017: 790, 2018: 850, 2019: 910, 2020: 950, 2021: 980,   2022: 1100,  2023: 1250,  2024: 1300,  2025: 1320 },
+        vhtt:  { 2015: 13500, 2016: 14200, 2017: 15100, 2018: 16200, 2019: 17000, 2020: 17500, 2021: 18000, 2022: 16500, 2023: 15000, 2024: 16200, 2025: 17000 },
+        tnpt:  { 2015: 10500, 2016: 11200, 2017: 12300, 2018: 13400, 2019: 14100, 2020: 14600, 2021: 15000, 2022: 16800, 2023: 18500, 2024: 19200, 2025: 20400 },
+        dtt:   { 2015: 14800, 2016: 15900, 2017: 17200, 2018: 18500, 2019: 19400, 2020: 20000, 2021: 20500, 2022: 21800, 2023: 22400, 2024: 23500, 2025: 24200 }
       }
     };
 
     // 4. Distress Zone (High Risk, Sinking Z-Score)
     const PRESET_DISTRESS = {
       model: 'Z',
-      years: [2021, 2022, 2023, 2024, 2025],
+      years: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
       data: {
-        tsnh:  { 2021: 9800,  2022: 8900,  2023: 7800,  2024: 6500,  2025: 5400 },
-        nnh:   { 2021: 9200,  2022: 9700,  2023: 10400, 2024: 11200, 2025: 12000 },
-        tts:   { 2021: 20000, 2022: 19500, 2023: 18200, 2024: 17000, 2025: 15800 },
-        lncpp: { 2021: 1200,  2022: 500,   2023: -600,  2024: -1900, 2025: -3400 },
-        lntt:  { 2021: 850,   2022: 210,   2023: -450,  2024: -1200, 2025: -1800 },
-        cplv:  { 2021: 1100,  2022: 1280,  2023: 1450,  2024: 1600,  2025: 1750 },
-        vhtt:  { 2021: 9500,  2022: 6800,  2023: 4200,  2024: 3100,  2025: 2400 },
-        tnpt:  { 2021: 14500, 2022: 15400, 2023: 16300, 2024: 17200, 2025: 18100 },
-        dtt:   { 2021: 15200, 2022: 14000, 2023: 12100, 2024: 10500, 2025: 8900 }
+        tsnh:  { 2015: 14500, 2016: 13800, 2017: 12900, 2018: 11800, 2019: 10900, 2020: 10200, 2021: 9800,  2022: 8900,  2023: 7800,  2024: 6500,  2025: 5400 },
+        nnh:   { 2015: 6500, 2016: 7100, 2017: 7800, 2018: 8400, 2019: 8800, 2020: 9000, 2021: 9200,  2022: 9700,  2023: 10400, 2024: 11200, 2025: 12000 },
+        tts:   { 2015: 24000, 2016: 23500, 2017: 22800, 2018: 22000, 2019: 21200, 2020: 20500, 2021: 20000, 2022: 19500, 2023: 18200, 2024: 17000, 2025: 15800 },
+        lncpp: { 2015: 3800, 2016: 3400, 2017: 2900, 2018: 2400, 2019: 1900, 2020: 1500, 2021: 1200,  2022: 500,   2023: -600,  2024: -1900, 2025: -3400 },
+        lntt:  { 2015: 2600, 2016: 2300, 2017: 1950, 2018: 1600, 2019: 1300, 2020: 1050, 2021: 850,   2022: 210,   2023: -450,  2024: -1200, 2025: -1800 },
+        cplv:  { 2015: 520, 2016: 640, 2017: 760, 2018: 880, 2019: 980, 2020: 1040, 2021: 1100,  2022: 1280,  2023: 1450,  2024: 1600,  2025: 1750 },
+        vhtt:  { 2015: 18500, 2016: 17200, 2017: 15800, 2018: 14200, 2019: 12500, 2020: 11000, 2021: 9500,  2022: 6800,  2023: 4200,  2024: 3100,  2025: 2400 },
+        tnpt:  { 2015: 9500, 2016: 10500, 2017: 11600, 2018: 12600, 2019: 13400, 2020: 14000, 2021: 14500, 2022: 15400, 2023: 16300, 2024: 17200, 2025: 18100 },
+        dtt:   { 2015: 21500, 2016: 20400, 2017: 19200, 2018: 18100, 2019: 17000, 2020: 16100, 2021: 15200, 2022: 14000, 2023: 12100, 2024: 10500, 2025: 8900 }
       }
     };
 
@@ -2175,12 +2181,13 @@
     }
 
     function resetDataForManual() {
-      if (confirm('Bạn muốn làm sạch bảng để bắt đầu tự nhập số liệu BCTC của doanh nghiệp giai đoạn 2021 - 2025?')) {
-        years = [2021, 2022, 2023, 2024, 2025];
+      if (confirm('Bạn muốn làm sạch bảng để bắt đầu tự nhập số liệu BCTC của doanh nghiệp giai đoạn 2015 - 2025?')) {
+        years = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
         currentData = {
           tsnh: {}, nnh: {}, tts: {}, lncpp: {}, lntt: {}, cplv: {}, vhtt: {}, tnpt: {}, dtt: {}
         };
         years.forEach(y => {
+          if (!actualYearStates[y]) actualYearStates[y] = 'solvent';
           METRIC_DEFINITIONS.forEach(m => {
             currentData[m.id][y] = '';
           });
@@ -2192,7 +2199,7 @@
         renderMatrixBody();
         calculateAll();
         saveState();
-        showStockFeedback('info', 'Bảng số liệu 2021 - 2025 đã được làm mới. Xin mời doanh nghiệp nhập các chỉ tiêu BCTC.');
+        showStockFeedback('info', 'Bảng số liệu 2015 - 2025 đã được làm mới. Xin mời doanh nghiệp nhập các chỉ tiêu BCTC.');
       }
     }
 
@@ -2217,6 +2224,10 @@
 
     function updateDynamicYearState() {
       updateYearBadge();
+      const matrixCountEl = document.getElementById('matrix-years-count-text');
+      if (matrixCountEl && years.length > 0) {
+        matrixCountEl.innerText = `${years.length} năm tài chính (${years[0]} - ${years[years.length - 1]})`;
+      }
       renderMatrixHeaders();
       updateMatrixCellVisuals();
     }
@@ -2454,9 +2465,9 @@
         endInput.value = end;
       }
 
-      if (end - start > 10) {
-        alert('Khoảng cách năm tối đa là 10 năm.');
-        end = start + 10;
+      if (end - start > 15) {
+        alert('Khoảng cách năm tối đa là 15 năm.');
+        end = start + 15;
         endInput.value = end;
       }
 
@@ -3178,7 +3189,7 @@
         data: {
           datasets: [
             {
-              label: 'Quỹ đạo dịch chuyển (2021 ➔ 2025)',
+              label: `Quỹ đạo dịch chuyển (${actYears[0] || 2015} ➔ ${actYears[actYears.length - 1] || 2025})`,
               data: points,
               showLine: true,
               borderColor: '#6366f1',
@@ -4177,7 +4188,7 @@ Người lập: ${dossier.evaluator} (Ngày ${new Date().toLocaleDateString('vi-
           if (parsed.years && Array.isArray(parsed.years) && parsed.years.length >= 2) {
             years = parsed.years;
           } else {
-            years = [2021, 2022, 2023, 2024, 2025];
+            years = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
           }
           if (parsed.actualYearStates) {
             actualYearStates = { ...actualYearStates, ...parsed.actualYearStates };
@@ -4360,46 +4371,83 @@ Người lập: ${dossier.evaluator} (Ngày ${new Date().toLocaleDateString('vi-
     function handleStockSearchSubmit() {
       const input = document.getElementById('stock-search-input');
       if (!input) return;
-      const raw = input.value.trim().toUpperCase();
+      const raw = input.value.trim();
       if (!raw) {
-        showStockFeedback('error', 'Vui lòng nhập mã cổ phiếu hoặc tên doanh nghiệp!');
+        showStockFeedback('error', 'Vui lòng nhập mã cổ phiếu hoặc tên doanh nghiệp (VD: HPG, Vinamilk, FPT...)!');
         input.focus();
         return;
       }
+      const rawUpper = raw.toUpperCase();
       const allStocks = (window.VIETNAM_STOCK_DIRECTORY || window.STOCK_DIRECTORY || (typeof STOCK_DIRECTORY !== 'undefined' ? STOCK_DIRECTORY : []));
-      const matched = allStocks.find(item => item.s === raw);
-      loadCompanyStock(raw, matched ? matched.n : '');
+      
+      let matched = allStocks.find(item => item.s === rawUpper);
+      if (!matched && typeof searchStockDirectory === 'function') {
+        const found = searchStockDirectory(raw);
+        if (found && found.length > 0) matched = found[0];
+      }
+      if (!matched) {
+        const rawNoAccent = typeof removeVietnameseAccents === 'function' ? removeVietnameseAccents(raw) : raw.toLowerCase();
+        matched = allStocks.find(item => {
+          const nNoAccent = typeof removeVietnameseAccents === 'function' ? removeVietnameseAccents(item.n) : item.n.toLowerCase();
+          return item.s.includes(rawUpper) || nNoAccent.includes(rawNoAccent);
+        });
+      }
+
+      const ticker = matched ? matched.s : rawUpper;
+      const compName = matched ? matched.n : '';
+      loadCompanyStock(ticker, compName);
     }
 
     async function loadCompanyStock(symbol, optionalName = '') {
-      const ticker = (symbol || '').trim().toUpperCase();
+      let ticker = (symbol || '').trim().toUpperCase();
       if (!ticker) return;
+
+      const allStocks = (window.VIETNAM_STOCK_DIRECTORY || window.STOCK_DIRECTORY || (typeof STOCK_DIRECTORY !== 'undefined' ? STOCK_DIRECTORY : []));
+      let matchedDirItem = allStocks.find(item => item.s === ticker);
+      if (!matchedDirItem && typeof searchStockDirectory === 'function') {
+        const matches = searchStockDirectory(symbol);
+        if (matches && matches.length > 0) {
+          matchedDirItem = matches[0];
+          ticker = matchedDirItem.s.toUpperCase();
+        }
+      }
 
       const btnFetch = document.getElementById('btn-fetch-stock');
       const btnText = document.getElementById('btn-fetch-text');
       const btnIcon = document.getElementById('btn-fetch-icon');
 
       if (btnFetch) btnFetch.disabled = true;
-      if (btnText) btnText.innerText = 'Đang tải dữ liệu...';
+      if (btnText) btnText.innerText = 'Đang tải dữ liệu 2015-2025...';
       if (btnIcon) btnIcon.className = 'w-4 h-4 animate-spin';
 
-      showStockFeedback('info', `Đang kết nối sàn BCTC cho mã ${ticker}...`);
+      showStockFeedback('info', `Đang kết nối sàn BCTC và trích xuất dữ liệu 2015 - 2025 cho mã ${ticker}...`);
 
       try {
         let stockResult = null;
         const preloadedDb = (window.PRELOADED_STOCKS_DATABASE || window.PRELOADED_STOCKS || (typeof PRELOADED_STOCKS !== 'undefined' ? PRELOADED_STOCKS : {}));
-        if (preloadedDb && preloadedDb[ticker]) {
+
+        // Check if preloaded has full 2015-2025 data (11 years)
+        if (preloadedDb && preloadedDb[ticker] && Array.isArray(preloadedDb[ticker].years) && preloadedDb[ticker].years.includes(2015)) {
           stockResult = preloadedDb[ticker];
         } else {
-          const resp = await fetch(`/api/stock?symbol=${encodeURIComponent(ticker)}`);
-          if (resp.ok) {
-            stockResult = await resp.json();
-          } else {
-            const errJson = await resp.json().catch(() => null);
-            if (errJson && errJson.error) {
-              throw new Error(errJson.error);
+          try {
+            const resp = await fetch(`/api/stock?symbol=${encodeURIComponent(ticker)}`);
+            if (resp.ok) {
+              stockResult = await resp.json();
+            } else {
+              const errJson = await resp.json().catch(() => null);
+              if (errJson && errJson.error) {
+                throw new Error(errJson.error);
+              }
+              throw new Error(`Không thể kết nối sàn BCTC cho mã ${ticker} (HTTP ${resp.status})`);
             }
-            throw new Error(`Không thể kết nối sàn BCTC cho mã ${ticker} (HTTP ${resp.status})`);
+          } catch (fetchErr) {
+            // Fallback to preloadedDb if exists
+            if (preloadedDb && preloadedDb[ticker]) {
+              stockResult = preloadedDb[ticker];
+            } else {
+              throw fetchErr;
+            }
           }
         }
 
@@ -4408,12 +4456,15 @@ Người lập: ${dossier.evaluator} (Ngày ${new Date().toLocaleDateString('vi-
           throw new Error(`Không tìm thấy dữ liệu BCTC cho mã ${ticker}`);
         }
 
-        // Apply financial data
-        years = stockResult.years && stockResult.years.length > 0 ? stockResult.years : [2021, 2022, 2023, 2024, 2025];
+        // Apply financial data with all years 2015-2025
+        years = stockResult.years && stockResult.years.length > 0 ? stockResult.years : [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
         currentData = finData;
 
-        const allStocks = (window.VIETNAM_STOCK_DIRECTORY || window.STOCK_DIRECTORY || (typeof STOCK_DIRECTORY !== 'undefined' ? STOCK_DIRECTORY : []));
-        const matchedDirItem = allStocks.find(item => item.s === ticker);
+        // Ensure all years exist in actualYearStates
+        years.forEach(y => {
+          if (!actualYearStates[y]) actualYearStates[y] = 'solvent';
+        });
+
         const exchangeRaw = (stockResult.exchange || (matchedDirItem && matchedDirItem.e) || 'HOSE').toUpperCase();
         const isUnlisted = exchangeRaw.includes('UPCOM') || exchangeRaw.includes('OTC');
 
@@ -4447,14 +4498,14 @@ Người lập: ${dossier.evaluator} (Ngày ${new Date().toLocaleDateString('vi-
           showStockFeedback('error', `⚠️ Cảnh báo: ${activeCompany.name} (${ticker}) thuộc ${cls.categoryLabel}. Mô hình Altman Z/Z'' không áp dụng được cho cấu trúc đòn bẩy tiền gửi ngân hàng.`);
         } else if (autoClassifyEnabled && cls && cls.model && cls.model !== 'INAPPLICABLE') {
           switchModel(cls.model, false);
-          showStockFeedback('success', `Đã nạp 9 chỉ tiêu BCTC cho ${ticker}. Tự động áp dụng ${cls.modelName} (${cls.categoryLabel}) theo chuẩn học thuật.`);
+          showStockFeedback('success', `Đã nạp thành công 9 chỉ tiêu BCTC giai đoạn ${years[0]} - ${years[years.length - 1]} (${years.length} năm) cho ${ticker}. Tự động áp dụng ${cls.modelName} (${cls.categoryLabel}) theo chuẩn học thuật.`);
         } else {
           if (isUnlisted) {
             switchModel('ZdoublePrime', false);
           } else {
             switchModel('Z', false);
           }
-          showStockFeedback('success', `Đã nạp thành công 9 chỉ tiêu BCTC cho mã ${ticker} (${activeCompany.name})`);
+          showStockFeedback('success', `Đã nạp thành công 9 chỉ tiêu BCTC giai đoạn ${years[0]} - ${years[years.length - 1]} (${years.length} năm) cho mã ${ticker} (${activeCompany.name})`);
         }
 
         updateYearInputs();
