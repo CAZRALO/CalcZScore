@@ -13,17 +13,14 @@ try {
   searchStockDirectory = stockDirModule.searchStockDirectory || null;
   PRELOADED_STOCKS = stockDirModule.PRELOADED_STOCKS || {};
 } catch (e) {
-  // Directory might not exist or be imported differently
 }
 
 try {
   CRAWLED_DATABASE = require('../crawled_700_database.json');
 } catch (e) {
-  // Crawled database might not exist yet
 }
 
 module.exports = async (req, res) => {
-  // CORS Headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -44,7 +41,6 @@ module.exports = async (req, res) => {
   let rawInput = queryInput.trim();
   let ticker = rawInput.toUpperCase();
 
-  // If input is not directly found as a registered ticker in directory, search by company name
   const isDirectTicker = STOCK_DIRECTORY.some(item => item.s && item.s.toUpperCase() === ticker);
   if (!isDirectTicker && searchStockDirectory) {
     const matched = searchStockDirectory(rawInput);
@@ -68,11 +64,8 @@ module.exports = async (req, res) => {
   try {
     const currentYear = new Date().getFullYear();
 
-    // Check pre-registered directory entry
     const dirEntry = STOCK_DIRECTORY.find(item => item.s && item.s.toUpperCase() === ticker);
 
-    // Endpoints designed to cover all years from 2015 to 2025:
-    // 2025 -> 2022..2025; 2024 -> 2021..2024; 2021 -> 2018..2021; 2018 -> 2015..2018; 2017 -> 2014..2017
     const targetYears = [2025, 2024, 2021, 2018, 2017];
 
     const [ssiRes, ...cafeFPages] = await Promise.allSettled([
@@ -93,11 +86,9 @@ module.exports = async (req, res) => {
       try {
         ssiData = await ssiRes.value.json();
       } catch (e) {
-        // ignore
       }
     }
 
-    // Company identity
     let companyName = (dirEntry && dirEntry.n) || ticker;
     let exchange = (dirEntry && dirEntry.e) || 'HOSE';
     let currentPrice = 0;
@@ -176,7 +167,6 @@ module.exports = async (req, res) => {
       const $bs = cheerio.load(bsHtml || '');
       const $inc = cheerio.load(incHtml || '');
 
-      // Fallback company name from title if needed
       if (companyName === ticker && bsHtml) {
         const pageTitle = $bs('title').text();
         const match = pageTitle.match(/^(.*?)(?:\s*-\s*Báo cáo tài chính|\s*-\s*CafeF)/i);
@@ -217,7 +207,6 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Blend preloaded database if available to complete any gaps (e.g., 2015)
     const preloadedEntry = PRELOADED_STOCKS[ticker] || CRAWLED_DATABASE[ticker];
     if (preloadedEntry && preloadedEntry.data) {
       const keys = ['tsnh', 'nnh', 'tts', 'lncpp', 'lntt', 'cplv', 'vhtt', 'tnpt', 'dtt'];
@@ -239,17 +228,14 @@ module.exports = async (req, res) => {
       }
     }
 
-    // Determine final list of years
     let sortedYears = Array.from(detectedYearsSet).sort((a, b) => a - b);
 
-    // If years empty, return 404
     if (sortedYears.length === 0) {
       return res.status(404).json({
         error: `Không tìm thấy Báo cáo tài chính giai đoạn 2015 - 2025 cho mã ${ticker}. Doanh nghiệp có thể chưa nộp BCTC theo năm hoặc mã chưa đúng.`
       });
     }
 
-    // Special check for Banks & Financial Institutions
     const hasTSNH = Object.values(merged.tsnh).some(v => v > 0);
     const hasTTS = Object.values(merged.tts).some(v => v > 0);
 
@@ -271,11 +257,9 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Balance Sheet Fallbacks & Consistencies
     sortedYears.forEach(y => {
       const yr = String(y);
       if (!merged.tts[yr]) {
-        // Look for neighbor year
         const prev = String(y - 1);
         const next = String(y + 1);
         merged.tts[yr] = merged.tts[prev] || merged.tts[next] || 0;
@@ -294,7 +278,6 @@ module.exports = async (req, res) => {
       if (merged.nnh[yr] === undefined) merged.nnh[yr] = 0;
     });
 
-    // Edge cache on Vercel: 24h cache, 12h stale-while-revalidate
     res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=43200');
 
     return res.status(200).json({

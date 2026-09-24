@@ -728,11 +728,8 @@ function searchStockDirectory(keyword) {
   const kwNoAccent = removeVietnameseAccents(cleanKw);
 
   return STOCK_DIRECTORY.filter(item => {
-    // 1. Khớp chính xác hoặc chứa mã cổ phiếu
     if (item.s.includes(kwUpper)) return true;
-    // 2. Khớp tên có dấu
     if (item.n.toLowerCase().includes(cleanKw.toLowerCase())) return true;
-    // 3. Khớp tên không dấu
     const nameNoAccent = removeVietnameseAccents(item.n);
     return nameNoAccent.includes(kwNoAccent);
   }).slice(0, 10); // Lấy tối đa 10 kết quả phù hợp nhất
@@ -778,7 +775,6 @@ function classifyEnterprise(input) {
   const indNoAccent = removeVietnameseAccents(industry).toLowerCase();
   const nameNoAccent = removeVietnameseAccents(companyName).toLowerCase();
 
-  // 1. Nhận diện nhóm Ngân hàng, Chứng khoán, Bảo hiểm, Định chế tài chính
   const BANK_TICKERS = [
     'VCB', 'BID', 'CTG', 'TCB', 'MBB', 'ACB', 'VPB', 'STB', 'HDB', 'SHB', 'TPB', 'LPB', 'MSB', 'OCB', 'VIB', 'SSB', 'EIB', 'BAB', 'NAB', 'BVB', 'KLB', 'PGB', 'SGB', 'ABB', 'VAB',
     'SSI', 'VND', 'HCM', 'VCI', 'SHS', 'MBS', 'CTS', 'BSI', 'FTS', 'AGR', 'VIX', 'ORS', 'TVS', 'APG', 'WSS', 'IVS',
@@ -806,7 +802,6 @@ function classifyEnterprise(input) {
     };
   }
 
-  // 2. Nhận diện doanh nghiệp UPCoM hoặc Chưa niêm yết
   const isUnlisted = exchange.includes('UPCOM') || exchange.includes('OTC') || exchange.includes('CHUA') || exchange.includes('UNLISTED');
   if (isUnlisted) {
     return {
@@ -824,7 +819,6 @@ function classifyEnterprise(input) {
     };
   }
 
-  // 3. Doanh nghiệp niêm yết HOSE / HNX: Phân biệt Phi sản xuất vs Sản xuất
   const nonMfgKeywords = [
     'bat dong san', 'bds', 'dia oc', 'nha o', 'do thi', 'khu cong nghiep', 'kcn', 'trung tam thuong mai',
     'ban le', 'thuong mai', 'phan phoi', 'ict', 'cong nghe', 'phan mem', 'vien thong', 'tin hoc',
@@ -851,7 +845,6 @@ function classifyEnterprise(input) {
     };
   }
 
-  // 4. Mặc định cho doanh nghiệp niêm yết: Sản xuất công nghiệp / Chế biến / Chế tạo
   return {
     model: 'Z',
     modelName: 'Mô hình Z (1968)',
@@ -867,7 +860,6 @@ function classifyEnterprise(input) {
   };
 }
 
-// Gán thông tin phân loại tự động vào từng mục trong danh mục
 STOCK_DIRECTORY.forEach(item => {
   const cls = classifyEnterprise(item);
   item.model = cls.model;
@@ -4405,7 +4397,6 @@ const PRELOADED_STOCKS = {
   }
 };
 
-// Hỗ trợ cả môi trường Browser và Node.js
 if (typeof window !== 'undefined') {
   window.STOCK_DIRECTORY = STOCK_DIRECTORY;
   window.VIETNAM_STOCK_DIRECTORY = STOCK_DIRECTORY;

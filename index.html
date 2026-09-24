@@ -59,6 +59,29 @@
     }
   </script>
   <style>
+    /* Zone Badges & Pills - Fix Text Wrapping and Layout */
+    .zone-badge-pill {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      white-space: nowrap !important;
+      padding: 3px 10px !important;
+      border-radius: 9999px !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      line-height: 1.2 !important;
+      min-width: 76px !important;
+      text-align: center !important;
+      box-decoration-break: clone !important;
+      -webkit-box-decoration-break: clone !important;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+    }
+    [class*="rounded-full"] {
+      white-space: nowrap;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+
     /* Custom scrollbar for matrix table */
     .table-scrollbar::-webkit-scrollbar {
       height: 8px;
@@ -580,7 +603,6 @@
           <!-- POPULAR QUICK TICKERS -->
           <div class="flex flex-wrap items-center gap-1.5 mt-3 text-xs">
             <span class="text-slate-400 font-medium mr-1 flex items-center gap-1">
-              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
               Gợi ý nhanh:
             </span>
             <button type="button" onclick="loadCompanyStock('HPG')" class="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-indigo-900/60 text-slate-200 border border-slate-700 transition font-semibold flex items-center gap-1">
@@ -648,7 +670,7 @@
               class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition shadow-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 active:scale-95"
               title="Nhấp để bật / tắt tính năng tự động phân loại theo ngành nghề"
             >
-              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span id="auto-classify-status-text">Tự Động Phân Loại: BẬT</span>
             </button>
           </div>
@@ -698,7 +720,6 @@
                   </span>
                 </div>
                 <span id="auto-classify-recommend-tag" class="text-[11px] font-extrabold text-indigo-700 flex items-center gap-1">
-                  <i data-lucide="sparkles" class="w-3 h-3 text-amber-500"></i>
                   Đã áp dụng: Mô hình Z (1968)
                 </span>
               </div>
@@ -758,7 +779,7 @@
           </div>
           <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-200/70">
             <button type="button" onclick="addOrToggleYear6()" class="text-indigo-600 hover:text-indigo-800 font-bold hover:underline inline-flex items-center gap-1">
-              <i data-lucide="sparkles" class="w-3 h-3 text-indigo-500"></i> + Năm Thứ 6 (2026)
+              + Năm Thứ 6 (2026)
             </button>
             <button type="button" onclick="handleYearRangeChange()" class="text-indigo-600 hover:text-indigo-800 font-bold hover:underline inline-flex items-center gap-1">
               <i data-lucide="refresh-cw" class="w-3 h-3"></i> Áp dụng dải năm
@@ -919,7 +940,7 @@
       <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-indigo-100">
         <div class="flex items-center gap-3">
           <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
-            <i data-lucide="sparkles" class="w-5 h-5"></i>
+            <i data-lucide="sliders" class="w-5 h-5"></i>
           </div>
           <div>
             <div class="flex items-center gap-2">
@@ -1263,7 +1284,7 @@
       <!-- SPREADSHEET MATRIX TABLE -->
       <div class="overflow-x-auto table-scrollbar p-4">
         <div id="calc-mode-banner" class="mb-3"></div>
-        <table class="w-full text-left border-collapse min-w-[700px]" id="matrix-table">
+        <table class="w-full text-left border-collapse min-w-[1100px]" id="matrix-table">
           <thead id="matrix-thead">
             <!-- Dynamic Year Range & Columns Injected Here -->
           </thead>
@@ -1482,7 +1503,7 @@
 
       <!-- RESULTS MATRIX TABLE -->
       <div class="overflow-x-auto table-scrollbar p-4">
-        <table class="w-full text-left border-collapse min-w-[700px]">
+        <table class="w-full text-left border-collapse min-w-[1100px]">
           <thead id="results-thead">
             <!-- Dynamic Year Range & Columns Injected Here -->
           </thead>
@@ -1897,7 +1918,6 @@
     let matrixQuadrantChartInstance = null;
     let activeCompany = null; // { symbol, name, exchange }
 
-    // Corporate Identity Dossier
     let dossier = {
       companyName: 'Công ty Cổ phần Tập đoàn Hòa Phát',
       taxCode: 'HOSE: HPG / MST: 0900189284',
@@ -1906,7 +1926,6 @@
       status: 'official'
     };
 
-    // Actual real-world states for Confusion Matrix (solvent vs distress)
     let actualYearStates = {
       2015: 'solvent',
       2016: 'solvent',
@@ -1921,10 +1940,8 @@
       2025: 'solvent'
     };
 
-    // Matrix cutoff mode: 'conservative' (Grey counted as Risk) vs 'lenient' (Only Red counted as Risk)
     let matrixCutoffMode = 'conservative';
 
-    // What-If Scenario Simulation Configuration
     let simConfig = {
       enabled: true,
       revPct: -20,     // Doanh thu thuần: -20%
@@ -1969,7 +1986,6 @@
       }
     };
 
-    // Fields required for Altman calculation with Circular 200/2014/TT-BTC Accounting Codes
     const METRIC_DEFINITIONS = [
       { id: 'tsnh', name: 'Tài sản ngắn hạn', code: 'TSNH', vasCode: 'Mã 100', desc: 'Tiền, tương đương tiền, khoản phải thu, hàng tồn kho...', requiredFor: ['Z', 'ZdoublePrime'] },
       { id: 'nnh',  name: 'Nợ ngắn hạn', code: 'NNH', vasCode: 'Mã 310', desc: 'Phải trả người bán, vay & nợ thuê tài chính ngắn hạn...', requiredFor: ['Z', 'ZdoublePrime'] },
@@ -1982,8 +1998,6 @@
       { id: 'dtt',  name: 'Doanh thu thuần', code: 'DTT', vasCode: 'Mã 10', desc: "Doanh thu thuần bán hàng & CCDV (Z dùng, Z'' loại trừ)", requiredFor: ['Z'] }
     ];
 
-    // PRESET DEMO DATA (In Billions VND) - Standardized 2015 - 2025
-    // 1. Safe Manufacturing (Model Z)
     const PRESET_SAFE = {
       model: 'Z',
       years: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
@@ -2000,7 +2014,6 @@
       }
     };
 
-    // 2. Safe Service / Trade / Non-manufacturing (Model Z'' - 4 variables)
     const PRESET_SERVICE_ZDOUBLEPRIME = {
       model: 'ZdoublePrime',
       years: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
@@ -2017,7 +2030,6 @@
       }
     };
 
-    // 3. Warning / Grey Zone (Fluctuating, Higher Debt)
     const PRESET_WARNING = {
       model: 'Z',
       years: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
@@ -2034,7 +2046,6 @@
       }
     };
 
-    // 4. Distress Zone (High Risk, Sinking Z-Score)
     const PRESET_DISTRESS = {
       model: 'Z',
       years: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
@@ -2051,10 +2062,8 @@
       }
     };
 
-    // Current working dataset in memory
     let currentData = JSON.parse(JSON.stringify(PRESET_SAFE.data));
 
-    // Threshold definitions
     const MODEL_THRESHOLDS = {
       Z: {
         safe: 2.99,
@@ -2233,7 +2242,6 @@
     }
 
     function updateMatrixCellVisuals() {
-      // Cell styling logic
       document.querySelectorAll('#matrix-tbody td').forEach(td => {
         const input = td.querySelector('input');
         if (input) {
@@ -2388,7 +2396,7 @@
         if (res.isFinancial) {
           recTag.innerHTML = '<span class="text-amber-600 font-extrabold flex items-center gap-1"><i data-lucide="alert-triangle" class="w-3.5 h-3.5 inline"></i> Không Khuyến Nghị Altman</span>';
         } else if (autoClassifyEnabled) {
-          recTag.innerHTML = `<span class="text-emerald-700 font-extrabold flex items-center gap-1"><i data-lucide="sparkles" class="w-3.5 h-3.5 inline"></i> Đã áp dụng: ${res.modelName}</span>`;
+          recTag.innerHTML = `<span class="text-emerald-700 font-extrabold flex items-center gap-1">Đã áp dụng: ${res.modelName}</span>`;
         } else {
           recTag.innerHTML = `<span class="text-slate-600 font-medium">Khuyến nghị học thuật: <b class="text-indigo-700">${res.modelName}</b></span>`;
         }
@@ -2482,7 +2490,6 @@
         });
       });
 
-      // Maintain actualYearStates
       years.forEach(y => {
         if (!actualYearStates[y]) actualYearStates[y] = 'solvent';
       });
@@ -2494,7 +2501,6 @@
     }
 
     function changeUnit(unit) {
-      // visual change helper
       calculateAll();
     }
 
@@ -2506,7 +2512,7 @@
       if (matrixThead) {
         matrixThead.innerHTML = `
           <tr class="border-b border-slate-200 text-slate-700 text-xs uppercase font-bold tracking-wider bg-slate-100/80">
-            <th rowspan="2" class="py-3 px-4 w-72 rounded-tl-xl align-middle border-r border-slate-200">Chỉ Tiêu BCTC</th>
+            <th rowspan="2" class="py-3 px-4 min-w-[210px] w-60 rounded-tl-xl align-middle border-r border-slate-200">Chỉ Tiêu BCTC</th>
             <th rowspan="2" class="py-3 px-2 w-20 text-center text-slate-500 align-middle border-r border-slate-200">Ký Hiệu</th>
             <th colspan="${years.length}" class="py-2.5 px-3 text-center font-extrabold text-indigo-700 bg-indigo-50 border-b border-indigo-200 text-sm tracking-wider">
               <span>Bảng Nhập Số Liệu Tài Chính (${years[0]} - ${years[years.length - 1]})</span>
@@ -2514,7 +2520,7 @@
           </tr>
           <tr class="border-b border-slate-200 text-slate-700 text-xs uppercase font-bold tracking-wider bg-slate-100/60">
             ${years.map((y, idx) => `
-              <th class="py-2.5 px-3 text-center w-36 font-bold text-slate-800 bg-indigo-50/30 border-r border-slate-200 last:border-r-0">
+              <th class="py-2.5 px-3 text-center min-w-[100px] font-bold text-slate-800 bg-indigo-50/30 border-r border-slate-200 last:border-r-0">
                 <div class="flex items-center justify-center gap-1.5">
                   <span class="font-extrabold text-slate-900">${y}</span>
                   ${(idx === years.length - 1) ? '<span class="bg-indigo-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold shadow-sm">Mới nhất</span>' : ''}
@@ -2539,20 +2545,20 @@
 
       resultsThead.innerHTML = `
         <tr class="border-b border-slate-200 text-slate-700 text-xs uppercase font-bold tracking-wider bg-slate-50">
-          <th rowspan="2" class="py-3 px-4 w-72 align-middle border-r border-slate-200">Chỉ Số Đánh Giá</th>
-          <th rowspan="2" class="py-3 px-2 w-28 text-center align-middle border-r border-slate-200">Ý Nghĩa Kinh Tế</th>
+          <th rowspan="2" class="py-3 px-4 min-w-[210px] w-60 align-middle border-r border-slate-200">Chỉ Số Đánh Giá</th>
+          <th rowspan="2" class="py-3 px-2 min-w-[110px] w-28 text-center align-middle border-r border-slate-200">Ý Nghĩa Kinh Tế</th>
           <th colspan="${totalColSpan}" class="py-2.5 px-3 text-center font-extrabold text-indigo-700 bg-indigo-50 border-b border-indigo-200 text-sm tracking-wider">
             <span>${rangeText}</span>
           </th>
         </tr>
         <tr class="border-b border-slate-200 text-slate-700 text-xs uppercase font-bold tracking-wider bg-slate-50/60">
           ${actYears.map((y, idx) => `
-            <th class="py-2.5 px-3 text-center w-32 font-bold text-slate-800 border-r border-slate-200">
+            <th class="py-2.5 px-3 text-center min-w-[95px] font-bold text-slate-800 border-r border-slate-200 whitespace-nowrap">
               <span class="font-extrabold text-slate-900">${y}</span>
             </th>
           `).join('')}
           ${hasSim ? `
-            <th class="py-2 px-3 text-center w-36 font-bold text-indigo-900 bg-indigo-100/70 border-l-2 border-indigo-300 last:border-r-0">
+            <th class="py-2 px-3 text-center min-w-[110px] font-bold text-indigo-900 bg-indigo-100/70 border-l-2 border-indigo-300 last:border-r-0 whitespace-nowrap">
               <div class="flex items-center justify-center gap-1.5">
                 <span class="font-black text-indigo-900">${simRes.year}</span>
                 <span class="bg-indigo-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold shadow-xs">Dự phóng</span>
@@ -2631,7 +2637,6 @@
     // SIMULATION ENGINE
     // ==========================================
     function initSimUI() {
-      // Sliders event bindings
       const sliderRev = document.getElementById('slider-rev');
       if (sliderRev) sliderRev.value = simConfig.revPct;
       const sliderInt = document.getElementById('slider-int');
@@ -2727,7 +2732,6 @@
       const deltaAssets = (simTsnh - baseTsnh) + (simTnpt - baseTnpt) * 0.4;
       const simTts = Math.max(1, baseTts + deltaAssets);
 
-      // Ratios
       const x1 = (simTsnh - simNnh) / simTts;
       const x2 = simLncpp / simTts;
       const ebit = simLntt + simCplv;
@@ -2740,13 +2744,11 @@
       const th = MODEL_THRESHOLDS[currentModel];
 
       if (currentModel === 'Z') {
-        // Standard Altman (1968)
         score = 1.2 * x1 + 1.4 * x2 + 3.3 * x3 + 0.6 * x4 + 0.999 * x5;
         if (score >= th.safe) zone = 'safe';
         else if (score < th.distress) zone = 'distress';
         else zone = 'grey';
       } else {
-        // Altman Z'' (1995)
         score = 6.56 * x1 + 3.26 * x2 + 6.72 * x3 + 1.05 * x4;
         if (score >= th.safe) zone = 'safe';
         else if (score < th.distress) zone = 'distress';
@@ -2755,7 +2757,6 @@
 
       const deltaScore = score - baseRes.score;
 
-      // Update Card
       const scoreBaseEl = document.getElementById('sim-score-base');
       if (scoreBaseEl) scoreBaseEl.innerText = baseRes.score.toFixed(2);
       const zoneBaseEl = document.getElementById('sim-zone-base');
@@ -2803,11 +2804,9 @@
         const tnpt  = getM('tnpt');
         const dtt   = getM('dtt');
 
-        // Prevent division by zero
         const safeTTS  = tts === 0 ? 1 : tts;
         const safeTNPT = tnpt === 0 ? 1 : tnpt;
 
-        // Components:
         const x1 = (tsnh - nnh) / safeTTS;
         const x2 = lncpp / safeTTS;
         const ebit = lntt + cplv;
@@ -2815,18 +2814,15 @@
         const x4 = vhtt / safeTNPT;
         const x5 = dtt / safeTTS;
 
-        // Calculate score according to active model
         let score = 0;
         let zone = 'safe'; // 'safe', 'grey', 'distress'
 
         if (currentModel === 'Z') {
-          // Standard Altman (1968) - 5 variables
           score = 1.2 * x1 + 1.4 * x2 + 3.3 * x3 + 0.6 * x4 + 0.999 * x5;
           if (score >= 2.99) zone = 'safe';
           else if (score < 1.81) zone = 'distress';
           else zone = 'grey';
         } else {
-          // Altman Z'' (1995/2000) - 4 variables (X5 omitted)
           score = 6.56 * x1 + 3.26 * x2 + 6.72 * x3 + 1.05 * x4;
           if (score >= 2.60) zone = 'safe';
           else if (score < 1.10) zone = 'distress';
@@ -2842,7 +2838,6 @@
         };
       });
 
-      // Calculate simulation result for next projected year
       const actYears = getActiveYears();
       let simRes = null;
       if (actYears.length > 0) {
@@ -2889,7 +2884,6 @@
     }
 
     function autoDetectActualStates() {
-      // Infers actual state from working capital and profits
       years.forEach(y => {
         const getM = (id) => (currentData[id] && currentData[id][y] !== undefined) ? parseFloat(currentData[id][y]) || 0 : 0;
         const tsnh = getM('tsnh');
@@ -2974,7 +2968,6 @@
     function updateConfusionMatrixUI(resultsPerYear) {
       const mat = calculateConfusionMatrix(resultsPerYear);
 
-      // Counts & lists
       const countTnEl = document.getElementById('matrix-count-tn');
       const countFpEl = document.getElementById('matrix-count-fp');
       const countFnEl = document.getElementById('matrix-count-fn');
@@ -2995,7 +2988,6 @@
       if (yearsFnEl) yearsFnEl.innerText = mat.yearsList.fn.length > 0 ? mat.yearsList.fn.join(', ') : 'Không có';
       if (yearsTpEl) yearsTpEl.innerText = mat.yearsList.tp.length > 0 ? mat.yearsList.tp.join(', ') : 'Không có';
 
-      // Flashing alert on FN container if FN > 0
       const fnContainer = document.getElementById('card-fn-container');
       if (fnContainer) {
         if (mat.fn > 0) {
@@ -3007,7 +2999,6 @@
         }
       }
 
-      // 4 Metrics
       const accEl = document.getElementById('metric-accuracy');
       const sensEl = document.getElementById('metric-sensitivity');
       const specEl = document.getElementById('metric-specificity');
@@ -3018,7 +3009,6 @@
       if (specEl) specEl.innerText = mat.specificity.toFixed(1) + '%';
       if (t2El) t2El.innerText = mat.type2Rate.toFixed(1) + '%';
 
-      // Year selector rows in Column 1
       const listEl = document.getElementById('matrix-actual-state-list');
       if (listEl) {
         listEl.innerHTML = years.map(y => {
@@ -3052,7 +3042,6 @@
         }).join('');
       }
 
-      // Strategic Financial Advisory Box
       const latestYear = years[years.length - 1];
       const latestClass = mat.classifications[latestYear] || { type: 'TN' };
       const advYearLabel = document.getElementById('advisory-year-label');
@@ -3166,11 +3155,8 @@
       actYears.forEach(y => {
         const res = resultsPerYear[y];
         if (!res) return;
-        // X = score
         const x = Number(res.score.toFixed(2));
-        // Y = real health proxy (0 - 100)
         let yHealth = (actualYearStates[y] === 'solvent') ? 75 : 25;
-        // add slight variation based on EBIT/TTS
         if (res.x3 !== undefined) {
           yHealth += Math.max(-15, Math.min(15, res.x3 * 50));
         }
@@ -3265,7 +3251,7 @@
             else if (diff < -0.001) trendSimIcon = '<span class="text-rose-600 font-bold ml-1">↓</span>';
           }
           simColHtml = `
-            <td class="py-2 px-3 text-center font-mono font-bold text-indigo-900 bg-indigo-50/50 border-l-2 border-indigo-300">
+            <td class="py-2.5 px-3 text-center font-mono font-bold text-indigo-900 bg-indigo-50/50 border-l-2 border-indigo-300 min-w-[110px] whitespace-nowrap">
               <span>${simVal.toFixed(4)}</span>
               ${trendSimIcon}
             </td>
@@ -3295,7 +3281,7 @@
                 else if (diff < -0.001) trendIcon = '<span class="text-rose-600 font-bold ml-1">↓</span>';
               }
               return `
-                <td class="py-2 px-3 text-center font-mono font-medium text-slate-700 ${isX5AndZdoublePrime ? 'opacity-40 italic' : ''}">
+                <td class="py-2.5 px-3 text-center font-mono font-medium text-slate-700 min-w-[95px] whitespace-nowrap ${isX5AndZdoublePrime ? 'opacity-40 italic' : ''}">
                   <span>${val.toFixed(4)}</span>
                   ${trendIcon}
                 </td>
@@ -3306,7 +3292,6 @@
         `;
       }).join('');
 
-      // Foot: Total Score & Zone
       const th = MODEL_THRESHOLDS[currentModel];
       const modelName = currentModel === 'Z' ? 'Altman Z (1968)' : "Altman Z'' (1995)";
 
@@ -3314,13 +3299,18 @@
       let simZoneCol = '';
       if (hasSim) {
         simScoreCol = `
-          <td class="py-3 px-3 text-center font-mono font-black text-sm text-indigo-950 bg-indigo-100 border-l-2 border-indigo-400">
+          <td class="py-3 px-3 text-center font-mono font-black text-sm text-indigo-950 bg-indigo-100 border-l-2 border-indigo-400 min-w-[110px] whitespace-nowrap">
             ${simRes.score.toFixed(3)}
           </td>
         `;
+        let simBadge = '';
+        if (simRes.zone === 'safe') simBadge = '<span class="zone-badge-pill bg-emerald-100 text-emerald-800 border border-emerald-300">An Toàn</span>';
+        else if (simRes.zone === 'grey') simBadge = '<span class="zone-badge-pill bg-amber-100 text-amber-800 border border-amber-300">Vùng Xám</span>';
+        else simBadge = '<span class="zone-badge-pill bg-rose-100 text-rose-800 border border-rose-300">Nguy Cơ</span>';
+
         simZoneCol = `
-          <td class="py-2 px-3 text-center font-bold text-xs bg-indigo-50 border-l-2 border-indigo-400">
-            ${simRes.zone === 'safe' ? '<span class="text-emerald-700">An toàn</span>' : (simRes.zone === 'grey' ? '<span class="text-amber-700">Vùng xám</span>' : '<span class="text-rose-700">Nguy cơ</span>')}
+          <td class="py-2.5 px-3 text-center bg-indigo-50/70 border-l-2 border-indigo-400 min-w-[110px] whitespace-nowrap">
+            ${simBadge}
           </td>
         `;
       }
@@ -3336,7 +3326,7 @@
           ${actYears.map(y => {
             const score = res[y] ? res[y].score : 0;
             return `
-              <td class="py-3 px-3 text-center font-mono font-black text-sm text-indigo-900">
+              <td class="py-3 px-3 text-center font-mono font-black text-sm text-indigo-900 min-w-[95px] whitespace-nowrap">
                 ${score.toFixed(3)}
               </td>
             `;
@@ -3353,12 +3343,12 @@
           ${actYears.map(y => {
             const zone = res[y] ? res[y].zone : 'distress';
             let badge = '';
-            if (zone === 'safe') badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">An Toàn</span>';
-            else if (zone === 'grey') badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">Vùng Xám</span>';
-            else badge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">Nguy Cơ</span>';
+            if (zone === 'safe') badge = '<span class="zone-badge-pill bg-emerald-100 text-emerald-800 border border-emerald-300">An Toàn</span>';
+            else if (zone === 'grey') badge = '<span class="zone-badge-pill bg-amber-100 text-amber-800 border border-amber-300">Vùng Xám</span>';
+            else badge = '<span class="zone-badge-pill bg-rose-100 text-rose-800 border border-rose-300">Nguy Cơ</span>';
 
             return `
-              <td class="py-2 px-3 text-center">
+              <td class="py-2.5 px-3 text-center min-w-[95px] whitespace-nowrap">
                 ${badge}
               </td>
             `;
@@ -3383,7 +3373,6 @@
       const safeThresholdArray = labels.map(() => th.safe);
       const distressThresholdArray = labels.map(() => th.distress);
 
-      // Bar Colors dynamic per zone
       const barColors = actYears.map(y => {
         const zone = res[y] ? res[y].zone : 'distress';
         if (zone === 'safe') return 'rgba(16, 185, 129, 0.85)';
@@ -3423,7 +3412,6 @@
         data: {
           labels: labels,
           datasets: [
-            // 1. Line Trendline
             {
               type: 'line',
               label: `Xu Hướng Điểm ${modelName}`,
@@ -3438,7 +3426,6 @@
               tension: 0.25,
               order: 1
             },
-            // 2. Bar chart per year
             {
               type: 'bar',
               label: `Điểm ${modelName} Từng Năm`,
@@ -3450,7 +3437,6 @@
               barPercentage: 0.55,
               order: 2
             },
-            // 3. Safe Zone Threshold Line
             {
               type: 'line',
               label: `Ngưỡng An Toàn (≥ ${th.safe})`,
@@ -3462,7 +3448,6 @@
               fill: false,
               order: 3
             },
-            // 4. Distress Zone Threshold Line
             {
               type: 'line',
               label: `Ngưỡng Nguy Cơ (< ${th.distress})`,
@@ -3523,7 +3508,6 @@
       document.getElementById('highlight-year-label').innerText = latestYear;
       document.getElementById('highlight-score-value').innerText = latest.score.toFixed(2);
 
-      // Delta
       if (prevYear && res[prevYear]) {
         const delta = latest.score - res[prevYear].score;
         const deltaEl = document.getElementById('highlight-delta-val');
@@ -3539,7 +3523,6 @@
         if (deltaEl) deltaEl.innerText = '0.00';
       }
 
-      // Zone Badge
       const badgeEl = document.getElementById('badge-latest-zone');
       const chartLatestEl = document.getElementById('chart-latest-status');
       if (latest.zone === 'safe') {
@@ -3559,7 +3542,6 @@
         if (chartLatestEl) chartLatestEl.innerHTML = `<span class="text-rose-600 font-bold">Năm ${latestYear}: Nguy hiểm (${latest.score.toFixed(2)})</span>`;
       }
 
-      // Average & Trend across actYears
       const scores = actYears.map(y => res[y] ? res[y].score : 0);
       const avg = scores.reduce((a, b) => a + b, 0) / (scores.length || 1);
       document.getElementById('highlight-avg-score').innerText = avg.toFixed(2);
@@ -3690,7 +3672,6 @@
       if (evalEl) dossier.evaluator = evalEl.value.trim() || 'Ban Quản Trị Rủi Ro & Tài Chính';
       if (statusEl) dossier.status = statusEl.value;
 
-      // Sync print letterhead
       const printName = document.getElementById('print-company-name');
       const printTax = document.getElementById('print-tax-code');
       const printDate = document.getElementById('print-date');
@@ -3728,7 +3709,6 @@
       updateDossierState();
     }
 
-    // 2. Financial Integrity & TT200 Sanity Audit
     function renderFinancialIntegrityAudit(resultsPerYear) {
       const actYears = getActiveYears();
       if (actYears.length === 0) return;
@@ -3748,13 +3728,9 @@
       const auditYearLabel = document.getElementById('audit-year-label');
       if (auditYearLabel) auditYearLabel.innerText = latestYear;
 
-      // Net Working Capital (Vốn lưu động ròng = TSNH - NNH)
       const nwc = tsnh - nnh;
-      // Current Ratio (Khả năng thanh toán hiện thời = TSNH / NNH)
       const currentRatio = nnh > 0 ? (tsnh / nnh) : (tsnh > 0 ? 99 : 0);
-      // Debt Ratio (Hệ số Nợ / Tổng tài sản = TNPT / TTS)
       const debtRatio = tts > 0 ? (tnpt / tts) * 100 : 0;
-      // Pre-tax Net Margin (Tỷ suất LN trước thuế / Doanh thu)
       const preTaxMargin = dtt > 0 ? (lntt / dtt) * 100 : 0;
 
       const grid = document.getElementById('audit-metrics-grid');
@@ -3843,7 +3819,6 @@
       `;
     }
 
-    // 3. Corporate Credit Rating Equivalent Card (S&P / Moody's Mapping)
     function getCreditRatingInfo(score, model) {
       if (model === 'Z') {
         if (score >= 4.0) {
@@ -3860,7 +3835,6 @@
           return { grade: 'HẠNG CCC / D', pd: '> 15.0% (Rất cao)', access: 'Đình Chỉ Tín Dụng', advisory: 'Cảnh báo nguy cơ vỡ nợ hoặc phá sản sắp xảy ra. Khuyến nghị thu hồi nợ khẩn cấp và không giải ngân thêm.', pillBg: 'bg-rose-200 text-rose-900 border-rose-400' };
         }
       } else {
-        // Model Z'' (Phi sản xuất, dịch vụ, EM)
         if (score >= 3.5) {
           return { grade: 'HẠNG AAA / AA', pd: '< 0.10% (Rất thấp)', access: 'Cấp Hạn Mức Tối Đa', advisory: 'Năng lực thanh toán vượt trội, dự phòng thặng dư vốn dồi dào, xếp hạng tín nhiệm đầu tư thượng hạng.', pillBg: 'bg-emerald-100 text-emerald-800 border-emerald-300' };
         } else if (score >= 2.6) {
@@ -3897,7 +3871,6 @@
       if (advisory) advisory.innerText = rating.advisory;
     }
 
-    // 4. Executive C-Suite Report & Signing Block
     function renderExecutiveReport(resultsPerYear) {
       const actYears = getActiveYears();
       if (actYears.length === 0) return;
@@ -3906,7 +3879,6 @@
       const latest = resultsPerYear[latestYear] || { score: 0, zone: 'distress' };
       const rating = getCreditRatingInfo(latest.score, currentModel);
 
-      // Pills
       const zonePill = document.getElementById('report-zone-pill');
       const scoreVal = document.getElementById('report-score-val');
       const ratingPill = document.getElementById('report-rating-pill');
@@ -3936,7 +3908,6 @@
         creditPill.className = `inline-block px-3 py-1 rounded-full text-xs font-black bg-indigo-100 text-indigo-800 border border-indigo-300`;
       }
 
-      // Narrative Memo Box
       const memoBox = document.getElementById('report-executive-summary');
       if (memoBox) {
         const scores = actYears.map(y => resultsPerYear[y] ? resultsPerYear[y].score : 0);
@@ -3958,7 +3929,6 @@
         `;
       }
 
-      // Date & Signatures
       const signDate = document.getElementById('report-sign-date');
       if (signDate) {
         const d = new Date();
@@ -3968,13 +3938,11 @@
       if (evalSign) evalSign.innerText = dossier.evaluator;
     }
 
-    // 5. Print to PDF
     function printExecutiveDossier() {
       updateDossierState();
       window.print();
     }
 
-    // 6. Export to CSV / Excel
     function exportToCSV() {
       const actYears = getActiveYears();
       if (actYears.length === 0) {
@@ -3990,7 +3958,6 @@
       csv += `Mô hình áp dụng: Altman ${currentModel === 'Z' ? 'Z (1968)' : "Z'' (1995)"}\n`;
       csv += `Ngày trích xuất: ${new Date().toLocaleDateString('vi-VN')}\n\n`;
 
-      // 1. Financial Indicators
       csv += `I. CÁC CHỈ TIÊU BÁO CÁO TÀI CHÍNH (TỶ VNĐ)\n`;
       csv += `Mã BCTC TT200,Chỉ Tiêu BCTC,Ký Hiệu,${actYears.map(y => `Năm ${y}`).join(',')}\n`;
       METRIC_DEFINITIONS.forEach(m => {
@@ -4001,11 +3968,9 @@
         csv += `"${m.vasCode}","${m.name}","${m.code}",${rowVals.join(',')}\n`;
       });
 
-      // 2. Computed Components X1-X5 & Z-Score
       csv += `\nII. CẤU PHẦN TỶ SỐ TÀI CHÍNH & ĐIỂM SỐ ALTMAN Z-SCORE\n`;
       csv += `Thành Phần,Ý Nghĩa Kinh Tế,,${actYears.map(y => `Năm ${y}`).join(',')}\n`;
 
-      // Calculate results
       const results = {};
       actYears.forEach(y => {
         const getM = (id) => (currentData[id] && currentData[id][y] !== undefined) ? parseFloat(currentData[id][y]) || 0 : 0;
@@ -4038,7 +4003,6 @@
       csv += `\n"ĐIỂM SỐ Z-SCORE","Điểm tổng hợp Altman",,${actYears.map(y => results[y].score.toFixed(2)).join(',')}\n`;
       csv += `"PHÂN LOẠI","Vùng sức khỏe tài chính",,${actYears.map(y => `"${results[y].zone}"`).join(',')}\n`;
 
-      // Trigger download
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -4050,13 +4014,11 @@
       document.body.removeChild(link);
     }
 
-    // 7. Copy Executive Memo to Clipboard
     function copyExecutiveMemo() {
       const actYears = getActiveYears();
       if (actYears.length === 0) return;
       const latestYear = actYears[actYears.length - 1];
 
-      // Grab current state calculation
       const getM = (id) => (currentData[id] && currentData[id][latestYear] !== undefined) ? parseFloat(currentData[id][latestYear]) || 0 : 0;
       const tsnh = getM('tsnh'), nnh = getM('nnh'), tts = getM('tts') || 1;
       const lncpp = getM('lncpp'), lntt = getM('lntt'), cplv = getM('cplv');
@@ -4426,7 +4388,6 @@ Người lập: ${dossier.evaluator} (Ngày ${new Date().toLocaleDateString('vi-
         let stockResult = null;
         const preloadedDb = (window.PRELOADED_STOCKS_DATABASE || window.PRELOADED_STOCKS || (typeof PRELOADED_STOCKS !== 'undefined' ? PRELOADED_STOCKS : {}));
 
-        // Check if preloaded has full 2015-2025 data (11 years)
         if (preloadedDb && preloadedDb[ticker] && Array.isArray(preloadedDb[ticker].years) && preloadedDb[ticker].years.includes(2015)) {
           stockResult = preloadedDb[ticker];
         } else {
@@ -4442,7 +4403,6 @@ Người lập: ${dossier.evaluator} (Ngày ${new Date().toLocaleDateString('vi-
               throw new Error(`Không thể kết nối sàn BCTC cho mã ${ticker} (HTTP ${resp.status})`);
             }
           } catch (fetchErr) {
-            // Fallback to preloadedDb if exists
             if (preloadedDb && preloadedDb[ticker]) {
               stockResult = preloadedDb[ticker];
             } else {
@@ -4456,11 +4416,9 @@ Người lập: ${dossier.evaluator} (Ngày ${new Date().toLocaleDateString('vi-
           throw new Error(`Không tìm thấy dữ liệu BCTC cho mã ${ticker}`);
         }
 
-        // Apply financial data with all years 2015-2025
         years = stockResult.years && stockResult.years.length > 0 ? stockResult.years : [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
         currentData = finData;
 
-        // Ensure all years exist in actualYearStates
         years.forEach(y => {
           if (!actualYearStates[y]) actualYearStates[y] = 'solvent';
         });
@@ -4475,13 +4433,11 @@ Người lập: ${dossier.evaluator} (Ngày ${new Date().toLocaleDateString('vi-
           isUnlisted: isUnlisted
         };
 
-        // Auto-sync Enterprise Dossier Card
         dossier.companyName = activeCompany.name;
         dossier.taxCode = `${activeCompany.exchange}: ${ticker}`;
         dossier.industry = stockResult.industry || (matchedDirItem && (matchedDirItem.ind || matchedDirItem.i)) || 'Doanh nghiệp niêm yết';
         syncDossierInputsUI();
 
-        // RUN ACADEMIC AUTO-CLASSIFICATION
         const classifyFn = window.classifyEnterprise || (typeof classifyEnterprise === 'function' ? classifyEnterprise : null);
         let cls = null;
         if (classifyFn) {

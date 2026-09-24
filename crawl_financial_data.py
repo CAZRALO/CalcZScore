@@ -26,7 +26,6 @@ import requests
 from bs4 import BeautifulSoup
 import openpyxl
 
-# Thiết lập UTF-8 cho console Windows
 if sys.platform == 'win32':
     try:
         sys.stdout.reconfigure(encoding='utf-8')
@@ -131,7 +130,6 @@ def crawl_single_stock(item, target_years=DEFAULT_YEARS, max_retries=2):
         }
     }
 
-    # 1. Trích xuất Giá thị trường và Tên tiếng Việt từ SSI iBoard
     for attempt in range(max_retries):
         try:
             ssi_url = f"https://iboard-query.ssi.com.vn/stock/{ticker}"
@@ -152,13 +150,10 @@ def crawl_single_stock(item, target_years=DEFAULT_YEARS, max_retries=2):
         except Exception:
             time.sleep(0.5)
 
-    # Nếu là Ngân hàng/Tổ chức tài chính, mô hình Altman không áp dụng
     if is_financial:
         result['status'] = 'financial_institution_skipped'
         return result
 
-    # 2. Trích xuất BCTC từ CafeF
-    # Target endpoint years: [2025, 2024, 2021] đủ phủ các năm 2018 - 2025
     query_years = [2025, 2024, 2021]
     
     for yr in query_years:
@@ -186,7 +181,6 @@ def crawl_single_stock(item, target_years=DEFAULT_YEARS, max_retries=2):
                 if not row_years:
                     break
 
-                # Trích xuất các chỉ tiêu Bảng Cân Đối Kế Toán
                 if soup_bs:
                     tsnh = extract_metric(soup_bs, row_years, lambda n: 'TÀI SẢN NGẮN HẠN' in n and any(x in n for x in ['A-', 'A.', 'A -']))
                     tts  = extract_metric(soup_bs, row_years, lambda n: 'TỔNG CỘNG TÀI SẢN' in n or ('TỔNG TÀI SẢN' in n and 'DÀI HẠN' not in n))
@@ -205,7 +199,6 @@ def crawl_single_stock(item, target_years=DEFAULT_YEARS, max_retries=2):
                             if y_str in vcsh and y_str not in result['data']['vhtt']: result['data']['vhtt'][y_str] = vcsh[y_str]
                             if y_str in tnpt and y_str not in result['data']['tnpt']: result['data']['tnpt'][y_str] = tnpt[y_str]
 
-                # Trích xuất các chỉ tiêu Báo Cáo Kết Quả Kinh Doanh
                 if soup_inc:
                     dtt  = extract_metric(soup_inc, row_years, lambda n: 'DOANH THU THUẦN' in n)
                     lntt = extract_metric(soup_inc, row_years, lambda n: 'LỢI NHUẬN KẾ TOÁN TRƯỚC THUẾ' in n or 'LỢI NHUẬN TRƯỚC THUẾ' in n)
@@ -222,11 +215,9 @@ def crawl_single_stock(item, target_years=DEFAULT_YEARS, max_retries=2):
             except Exception:
                 time.sleep(0.5)
 
-    # 3. Tính toán bổ sung tính nhất quán Bảng Cân Đối (TTS = VCSH + TNPT)
     years_with_data = 0
     for y in target_years:
         ys = str(y)
-        # Bổ sung tính nhất quán
         if not result['data']['tts'].get(ys) and result['data']['vhtt'].get(ys) and result['data']['tnpt'].get(ys):
             result['data']['tts'][ys] = result['data']['vhtt'][ys] + result['data']['tnpt'][ys]
         if not result['data']['tnpt'].get(ys) and result['data']['tts'].get(ys) and result['data']['vhtt'].get(ys):
@@ -234,7 +225,6 @@ def crawl_single_stock(item, target_years=DEFAULT_YEARS, max_retries=2):
         if not result['data']['vhtt'].get(ys) and result['data']['tts'].get(ys) and result['data']['tnpt'].get(ys):
             result['data']['vhtt'][ys] = max(0, result['data']['tts'][ys] - result['data']['tnpt'][ys])
 
-        # Kiểm tra năm có dữ liệu thực tế
         has_tts = result['data']['tts'].get(ys, 0) > 0
         has_dtt = result['data']['dtt'].get(ys, 0) > 0 or result['data']['lntt'].get(ys, 0) != 0
         if has_tts or has_dtt:
@@ -252,7 +242,6 @@ def find_excel_file(custom_path=None):
     if custom_path and os.path.exists(custom_path):
         return custom_path
     
-    # Tìm kiếm các file xlsx trong thư mục hiện tại
     candidates = glob.glob("*.xlsx")
     for f in candidates:
         if "dữ_liệu" in f.lower() or "du_lieu" in f.lower() or "dữ_liệu" in f.lower():
@@ -285,9 +274,6 @@ def load_stock_list_from_excel(excel_path):
     wb.close()
     return stocks
 
-# =============================================================================
-# HÀM CẬP NHẬT GHI VÀO FILE EXCEL
-# =============================================================================
 def update_excel_with_crawled_data(excel_path, output_path, crawl_results, target_years=DEFAULT_YEARS):
     """
     Cập nhật dữ liệu đã crawl vào sheet 'DỮ LIỆU' và 'DANH MỤC' của workbook.
@@ -299,7 +285,6 @@ def update_excel_with_crawled_data(excel_path, output_path, crawl_results, targe
     ws_dl = wb['DỮ LIỆU']
     ws_dm = wb['DANH MỤC']
     
-    # 1. Xác định vị trí dòng tiêu đề của từng năm trong sheet DỮ LIỆU
     year_row_headers = {}
     for r in range(1, 3600):
         val = ws_dl.cell(r, 1).value
@@ -311,8 +296,6 @@ def update_excel_with_crawled_data(excel_path, output_path, crawl_results, targe
 
     print(f"📌 Đã xác định các khối năm trong sheet 'DỮ LIỆU': {year_row_headers}")
 
-    # Bản đồ thứ tự cột trong DỮ LIỆU:
-    # 1: STT, 2: MÃ DN, 3: TSNH, 4: NNH, 5: TTS, 6: LNCPP, 7: LNTT, 8: CPLV, 9: VHTT/VCSH, 10: TNPT, 11: DTT
     metric_cols = {
         'tsnh': 3,
         'nnh': 4,
@@ -328,10 +311,8 @@ def update_excel_with_crawled_data(excel_path, output_path, crawl_results, targe
     updated_data_cells = 0
     updated_catalog_stocks = 0
 
-    # Lập chỉ mục kết quả crawl theo mã chứng khoán
     results_by_ticker = {r['symbol']: r for r in crawl_results}
 
-    # 2. Cập nhật sheet DỮ LIỆU
     for yr in target_years:
         header_row = year_row_headers.get(yr)
         if not header_row:
@@ -350,7 +331,6 @@ def update_excel_with_crawled_data(excel_path, output_path, crawl_results, targe
                 continue
 
             cdata = crawled.get('data', {})
-            # Kiểm tra xem năm này có dữ liệu không
             tts_val = cdata.get('tts', {}).get(ys)
             dtt_val = cdata.get('dtt', {}).get(ys)
             if tts_val or dtt_val:
@@ -360,7 +340,6 @@ def update_excel_with_crawled_data(excel_path, output_path, crawl_results, targe
                         ws_dl.cell(row_idx, col_idx).value = val
                         updated_data_cells += 1
 
-    # 3. Cập nhật sheet DANH MỤC (GIÁ và SỐ NĂM ĐÃ CÓ SỐ LIỆU)
     for r in range(2, ws_dm.max_row + 1):
         cell_ticker = ws_dm.cell(r, 2).value
         if not cell_ticker:
@@ -371,18 +350,15 @@ def update_excel_with_crawled_data(excel_path, output_path, crawl_results, targe
         if not crawled:
             continue
 
-        # Cập nhật giá thị trường nếu lấy được từ sàn
         if crawled.get('price') is not None and crawled.get('price') > 0:
             ws_dm.cell(r, 5).value = crawled['price']
 
-        # Cập nhật số năm có số liệu
         years_found = crawled.get('years_found', 0)
         if years_found > 0:
             existing = ws_dm.cell(r, 6).value or 0
             ws_dm.cell(r, 6).value = max(int(existing), years_found)
             updated_catalog_stocks += 1
 
-    # 4. Ghi thêm nhật ký vào sheet GHI CHÚ
     if 'GHI CHÚ' in wb.sheetnames:
         ws_gc = wb['GHI CHÚ']
         now_str = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -406,7 +382,6 @@ def sync_with_web_app(crawl_results, all_stocks, stock_directory_path="stock_dir
     Đồng bộ toàn bộ danh bạ 700 doanh nghiệp vào file stock_directory.js và xuất file
     cơ sở dữ liệu crawled_700_database.json cho Web App.
     """
-    # 1. Lưu file JSON cơ sở dữ liệu đầy đủ cho web nạp tức thì
     json_path = "crawled_700_database.json"
     cleaned_dict = {}
     for r in crawl_results:
@@ -424,7 +399,6 @@ def sync_with_web_app(crawl_results, all_stocks, stock_directory_path="stock_dir
         json.dump(cleaned_dict, f, ensure_ascii=False, indent=2)
     print(f"✅ Đã xuất cơ sở dữ liệu JSON cho Web App: {json_path}")
 
-    # 2. Cập nhật danh bạ STOCK_DIRECTORY trong stock_directory.js nếu tồn tại
     if not os.path.exists(stock_directory_path):
         return
 
@@ -432,7 +406,6 @@ def sync_with_web_app(crawl_results, all_stocks, stock_directory_path="stock_dir
         with open(stock_directory_path, 'r', encoding='utf-8') as f:
             js_content = f.read()
 
-        # Nhận diện khối khai báo const STOCK_DIRECTORY = [...]
         pattern = r'const STOCK_DIRECTORY = \[(.*?)\];\s*// Helper'
         m = re.search(pattern, js_content, re.DOTALL)
         if not m:
@@ -457,7 +430,6 @@ def sync_with_web_app(crawl_results, all_stocks, stock_directory_path="stock_dir
                             'ind': ind_m.group(1) if ind_m else ''
                         }
 
-            # Tạo danh sách hợp nhất 700 mã
             merged_list = []
             for es in all_stocks:
                 sym = es['symbol'].strip().upper()
@@ -480,7 +452,6 @@ def sync_with_web_app(crawl_results, all_stocks, stock_directory_path="stock_dir
                         'ind': ''
                     })
 
-            # Tạo lại khối JavaScript
             lines = ["const STOCK_DIRECTORY = ["]
             for item in merged_list:
                 escaped_n = item['n'].replace("'", "\\'")
@@ -528,11 +499,9 @@ def main():
     print(f"⚡ Số luồng xử lý     : {args.workers}")
     print("=" * 70)
 
-    # Đọc danh sách doanh nghiệp từ Excel
     all_stocks = load_stock_list_from_excel(excel_file)
     print(f"📋 Tổng số mã tìm thấy trong sheet 'DANH MỤC': {len(all_stocks)}")
 
-    # Lọc danh sách theo tùy chọn CLI
     target_stocks = all_stocks
     if args.symbols:
         requested = [s.strip().upper() for s in args.symbols.split(',') if s.strip()]
@@ -546,7 +515,6 @@ def main():
         target_stocks = target_stocks[:args.limit]
         print(f"⏱️ Giới hạn chạy thử nghiệm: {len(target_stocks)} mã đầu tiên")
 
-    # Xử lý checkpoint nạp lại nếu có
     completed_cache = {}
     if args.resume and os.path.exists(CHECKPOINT_FILE):
         try:
@@ -556,7 +524,6 @@ def main():
         except Exception as e:
             print(f"⚠️ Không thể đọc file checkpoint: {e}")
 
-    # Lọc các mã chưa hoàn thành
     queue = [s for s in target_stocks if s['symbol'] not in completed_cache]
     print(f"⏳ Cần thực hiện crawl: {len(queue)} mã (Đã có sẵn: {len(target_stocks) - len(queue)} mã)")
 
@@ -579,7 +546,6 @@ def main():
                     completed_cache[ticker] = res
                     completed_count += 1
 
-                    # Hiển thị tiến độ
                     status_icon = "✅" if res['status'] == 'success' else ("⚠️" if res['is_financial'] else "⚪")
                     elapsed = time.time() - start_time
                     speed = completed_count / elapsed if elapsed > 0 else 0
@@ -592,7 +558,6 @@ def main():
                         f"Tốc độ: {speed:.1f} mã/s | ETA: {eta:.0f}s"
                     )
 
-                    # Lưu checkpoint mỗi 10 mã
                     if completed_count % 10 == 0:
                         with open(CHECKPOINT_FILE, 'w', encoding='utf-8') as f:
                             json.dump(completed_cache, f, ensure_ascii=False)
@@ -600,7 +565,6 @@ def main():
                 except Exception as e:
                     print(f"❌ Lỗi khi crawl {ticker}: {e}")
 
-        # Lưu checkpoint cuối cùng
         with open(CHECKPOINT_FILE, 'w', encoding='utf-8') as f:
             json.dump(completed_cache, f, ensure_ascii=False)
 
@@ -614,14 +578,12 @@ def main():
     print(f"⏱️ Tổng thời gian thực thi     : {time.time() - start_time:.1f} giây")
     print("=" * 70)
 
-    # Cập nhật kết quả vào Excel
     update_excel_with_crawled_data(excel_file, output_file, results)
 
-    # Đồng bộ với ứng dụng web nếu không bị tắt
     if not args.no_sync_web:
         sync_with_web_app(results, all_stocks)
 
-    print("\n✨ Hoàn tất xuất sắc! Dữ liệu đã sẵn sàng để nghiên cứu và phân tích.")
+    print("\nHoàn tất xuất sắc! Dữ liệu đã sẵn sàng để nghiên cứu và phân tích.")
 
 if __name__ == '__main__':
     main()
