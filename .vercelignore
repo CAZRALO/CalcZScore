@@ -1,0 +1,19 @@
+# Vercel Ignore File
+# Bỏ qua các file không cần thiết khi upload lên Vercel Hosting
+
+# Python files & Cache
+__pycache__/
+*.pyc
+*.pyo
+crawl_financial_data.py
+crawl_checkpoint.json
+
+# Raw Excel data files (giữ ở máy local)
+*.xlsx
+*.xls
+
+# Git & Logs
+.git/
+*.log
+.DS_Store
+Thumbs.db

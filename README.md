@@ -110,18 +110,72 @@ vercel
 
 ---
 
+## 🤖 Module Tự Động Crawl Dữ Liệu BCTC 700 Doanh Nghiệp (HOSE & HNX)
+
+Hệ thống tích hợp sẵn crawler chuyên nghiệp (`crawl_financial_data.py`) phục vụ việc thu thập, chuẩn hóa và tự động điền toàn bộ 9 chỉ tiêu BCTC giai đoạn **2021 – 2025** cho **700 doanh nghiệp** niêm yết (400 mã sàn HOSE + 300 mã sàn HNX) từ danh sách trong sheet `DANH MỤC` của file `dữ_liệu_2 2.xlsx`.
+
+### 📌 Các Chỉ Tiêu Được Trích Xuất & Điền Vào Sheet `DỮ LIỆU`:
+1. `TSNH`: Tài sản ngắn hạn (Current Assets)
+2. `NNH`: Nợ ngắn hạn (Current Liabilities)
+3. `TTS`: Tổng tài sản (Total Assets)
+4. `LNCPP`: Lợi nhuận sau thuế chưa phân phối (Retained Earnings)
+5. `LNTT`: Lợi nhuận kế toán trước thuế (EBIT / Pre-tax Profit)
+6. `CPLV`: Chi phí lãi vay (Interest Expense)
+7. `VHTT/VCSH`: Vốn chủ sở hữu sổ sách (Book Value of Equity)
+8. `TNPT`: Tổng nợ phải trả (Total Liabilities)
+9. `DTT`: Doanh thu thuần về bán hàng & cung cấp dịch vụ (Net Sales)
+10. `GIÁ`: Giá đóng cửa/tham chiếu thị trường cập nhật thời gian thực từ sàn SSI.
+
+### ⚡ Các Lệnh Thực Thi Tiện Lợi (CLI Commands):
+```bash
+# 1. Chạy crawl toàn bộ 700 mã và cập nhật trực tiếp vào file Excel gốc:
+npm run crawl
+# hoặc chạy Python:
+python crawl_financial_data.py --all --in-place
+
+# 2. Chỉ crawl các mã chưa có đủ 5 năm số liệu (tiết kiệm thời gian):
+npm run crawl:missing
+# hoặc:
+python crawl_financial_data.py --missing --in-place
+
+# 3. Chạy thử nghiệm nhanh trên 10 mã đầu tiên:
+npm run crawl:test
+# hoặc:
+python crawl_financial_data.py --limit 10
+
+# 4. Tiếp tục quá trình crawl từ checkpoint gần nhất (khi bị ngắt mạng / tạm dừng):
+npm run crawl:resume
+# hoặc:
+python crawl_financial_data.py --resume --all --in-place
+
+# 5. Crawl theo danh sách mã tùy chọn:
+python crawl_financial_data.py --symbols HPG,VNM,FPT,MWG,DGC
+```
+
+### 🛡️ Tính Năng Nổi Bật Của Bộ Crawler:
+- **Đa luồng song song (Multi-threading)**: Tăng tốc độ thu thập gấp 5–8 lần với cơ chế kiểm soát tần suất tránh bị sàn chặn IP.
+- **Tự động lưu Checkpoint**: File `crawl_checkpoint.json` được cập nhật liên tục; nếu tạm dừng giữa chừng có thể nối tiếp ngay lập tức với `--resume`.
+- **Nhận diện Khối Tài chính**: Tự động phát hiện ngân hàng, chứng khoán, bảo hiểm (ACB, VCB, SSI,...) để đánh dấu cảnh báo theo đúng lý thuyết Edward Altman.
+- **Bảo toàn Cấu trúc Excel**: Ghi đè chuẩn xác từng ô theo đúng 5 khối năm (2021..2025) gồm 701 dòng/khối, tự động tính số năm có số liệu trong `DANH MỤC` và ghi nhật ký vào `GHI CHÚ`.
+- **Đồng bộ hóa tức thì với Web App**: Tự động tạo cơ sở dữ liệu `crawled_700_database.json` và đồng bộ vào danh bạ `stock_directory.js` để tìm kiếm và phân tích tức thì trên giao diện web.
+
+---
+
 ## 📂 Cấu Trúc Thư Mục
 ```text
 CalcZScore/
 ├── api/
-│   └── stock.js           # Vercel Serverless Function trích xuất BCTC từ sàn
-├── stock_directory.js     # Danh bạ 150+ doanh nghiệp niêm yết & cache BCTC
-├── index.html             # Giao diện chính & bảng tính toán Z-Score
-├── calc_zscore.html       # File điều hướng tương thích
-├── package.json           # Cấu hình dự án & dependencies (cheerio)
-├── vercel.json            # Cấu hình deployment Vercel
-├── .gitignore             # File bỏ qua cho git
-└── README.md              # Tài liệu hướng dẫn
+│   └── stock.js               # Vercel Serverless Function trích xuất BCTC từ sàn
+├── crawl_financial_data.py    # Module Python crawler tự động 700 công ty HOSE & HNX
+├── crawled_700_database.json  # Cơ sở dữ liệu cache BCTC 700 công ty
+├── stock_directory.js         # Danh bạ 700 doanh nghiệp niêm yết & cache BCTC
+├── dữ_liệu_2 2.xlsx           # File Excel dữ liệu 700 DN (DANH MỤC, DỮ LIỆU, GHI CHÚ)
+├── index.html                 # Giao diện chính & bảng tính toán Z-Score
+├── calc_zscore.html           # File điều hướng tương thích
+├── package.json               # Cấu hình dự án & dependencies (cheerio, crawl scripts)
+├── vercel.json                # Cấu hình deployment Vercel
+├── .gitignore                 # File bỏ qua cho git
+└── README.md                  # Tài liệu hướng dẫn
 ```
 
 ---

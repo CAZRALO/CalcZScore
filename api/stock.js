@@ -4,6 +4,7 @@ let STOCK_DIRECTORY = [];
 let classifyEnterprise = null;
 let searchStockDirectory = null;
 let PRELOADED_STOCKS = {};
+let CRAWLED_DATABASE = {};
 
 try {
   const stockDirModule = require('../stock_directory.js');
@@ -13,6 +14,12 @@ try {
   PRELOADED_STOCKS = stockDirModule.PRELOADED_STOCKS || {};
 } catch (e) {
   // Directory might not exist or be imported differently
+}
+
+try {
+  CRAWLED_DATABASE = require('../crawled_700_database.json');
+} catch (e) {
+  // Crawled database might not exist yet
 }
 
 module.exports = async (req, res) => {
@@ -211,7 +218,7 @@ module.exports = async (req, res) => {
     }
 
     // Blend preloaded database if available to complete any gaps (e.g., 2015)
-    const preloadedEntry = PRELOADED_STOCKS[ticker];
+    const preloadedEntry = PRELOADED_STOCKS[ticker] || CRAWLED_DATABASE[ticker];
     if (preloadedEntry && preloadedEntry.data) {
       const keys = ['tsnh', 'nnh', 'tts', 'lncpp', 'lntt', 'cplv', 'vhtt', 'tnpt', 'dtt'];
       keys.forEach(k => {

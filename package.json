@@ -4,7 +4,11 @@
   "description": "Hệ thống phân tích và dự báo nguy cơ kiệt quệ tài chính doanh nghiệp ứng dụng Altman Z-Score và Z'-Score kết nối dữ liệu sàn chứng khoán",
   "main": "index.html",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "crawl": "py -3.13 crawl_financial_data.py --all --in-place",
+    "crawl:missing": "py -3.13 crawl_financial_data.py --missing --in-place",
+    "crawl:test": "py -3.13 crawl_financial_data.py --limit 10",
+    "crawl:resume": "py -3.13 crawl_financial_data.py --resume --all --in-place"
   },
   "dependencies": {
     "cheerio": "^1.2.0"

@@ -5,3 +5,8 @@ node_modules/
 .env
 .env.local
 *.log
+__pycache__/
+*.pyc
+crawl_checkpoint.json
+*.xlsx
+HUONG_DAN_CHAY_VA_DEPLOY.md 
